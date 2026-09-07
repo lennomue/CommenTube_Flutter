@@ -1,30 +1,23 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:my_test_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Home画面に5問分のプレビューを表示する', (tester) async {
+    await tester.pumpWidget(const CommenTubeApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('CommenTube'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('quiz-card-mock_video_01')),
+      findsOneWidget,
+    );
+    expect(find.text('ポップ'), findsOneWidget);
+    expect(find.text('6711万回視聴'), findsOneWidget);
+    expect(find.text('ホーム'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    final lastCard = find.byKey(const ValueKey('quiz-card-mock_video_05'));
+    await tester.scrollUntilVisible(lastCard, 500);
+    expect(lastCard, findsOneWidget);
   });
 }

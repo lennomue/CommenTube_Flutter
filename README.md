@@ -8,7 +8,7 @@ flutter doctor
 <!-- いざ実行、usbを繋いで実機でテスト -->
 flutter run
 軽微な修正はコードを編集してからターミナルで`r` -> リロード、`R`で再起動
-なお、`d`で
+なお、`d`で切り離し、スマホ本体にアプリが残る
 
 
 <!-- 以下初めのテストの時のやり方 -->
@@ -22,9 +22,9 @@ sudo gem install cocoapods
 A new release of RubyGems is available: 3.5.9 → 4.0.17!
 Run `gem update --system 4.0.17` to update your installation.
 
-
 Xcodeを開いて(ターミナルで`open ios/Runner.xcworkspace`)プロジェクトの設定としてAppleアカウントの初期設定をする。
-iPhoneの「設定」→「プライバシーとセキュリティ」→「デベロッパモード」を有効にする
+iPhoneの「設定」-> 「プライバシーとセキュリティ」→「デベロッパモード」を有効にする
+iPhoneの「一般」-> 「VPNとデバイス管理」で信頼
 
 iPhoneに繋いでアプリが立ち上がりテストができた！
 -> ターミナル

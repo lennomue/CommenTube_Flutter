@@ -1,0 +1,32 @@
+[
+  {
+    "video_id": "mock_video_01",
+    "music_genre": ["pop"],
+    "video_view_count": 67110000,
+    "video_published_at": "2023-06-14T00:00:00Z"
+  },
+  {
+    "video_id": "mock_video_02",
+    "music_genre": ["r_and_b_soul"],
+    "video_view_count": 150000000,
+    "video_published_at": "2014-03-08T00:00:00Z"
+  },
+  {
+    "video_id": "mock_video_03",
+    "music_genre": ["rock"],
+    "video_view_count": 9240000,
+    "video_published_at": "2019-09-21T00:00:00Z"
+  },
+  {
+    "video_id": "mock_video_04",
+    "music_genre": ["anime_soundtrack"],
+    "video_view_count": 38200000,
+    "video_published_at": "2021-01-30T00:00:00Z"
+  },
+  {
+    "video_id": "mock_video_05",
+    "music_genre": ["hiphop"],
+    "video_view_count": 78500000,
+    "video_published_at": "2017-11-02T00:00:00Z"
+  }
+]
