@@ -284,19 +284,36 @@ class _GameActions extends StatelessWidget {
           Expanded(
             child: FilledButton.icon(
               key: const ValueKey('answer-button'),
-              onPressed: () => context.goToResult(videoId),
+              onPressed: () => _answer(context),
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('回答する'),
             ),
           ),
           const SizedBox(width: 12),
           OutlinedButton(
+            key: const ValueKey('skip-button'),
             onPressed: () => context.goToResult(videoId),
             child: const Text('スキップ'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _answer(BuildContext context) async {
+    final isCorrect = await context.openAnswerWebView(videoId);
+    if (!context.mounted || isCorrect == null) {
+      return;
+    }
+    if (isCorrect) {
+      context.goToResult(videoId);
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('不正解です。ヒントを確認してもう一度挑戦しましょう。')),
+      );
   }
 }
 

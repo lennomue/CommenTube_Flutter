@@ -83,7 +83,7 @@ void main() {
     expect(find.text('楽曲情報'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    await tester.tap(find.byKey(const ValueKey('answer-button')));
+    await tester.tap(find.byKey(const ValueKey('skip-button')));
     await _pumpAsyncScreen(tester);
 
     expect(find.text('I Want You Back'), findsOneWidget);

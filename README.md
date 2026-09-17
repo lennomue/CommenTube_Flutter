@@ -1,6 +1,6 @@
 Bundle Identifier：com.lennomue.commentubedemo
 # 実行の仕方
-cd /Users/lennomue/Dev/CommenTube
+cd /Users/lennomue/Dev/CommenTube/my_test_app
 <!-- flutter コマンドを使用可能に -->
 export PATH="/Users/lennomue/develop/flutter/bin:$PATH"
 <!-- 実行可能かの検査をする。iOS関連でチェックが出ればOK -->
