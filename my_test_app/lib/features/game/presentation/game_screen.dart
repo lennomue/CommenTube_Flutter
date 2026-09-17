@@ -1,10 +1,317 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GameScreen extends StatelessWidget {
-  const GameScreen({super.key});
+import '../../../core/models/quiz.dart';
+import '../../../core/repositories/quiz_providers.dart';
+import '../../../core/router/app_router.dart';
+import '../../../core/utils/display_formatters.dart';
+
+class GameScreen extends ConsumerWidget {
+  const GameScreen({super.key, required this.videoId});
+
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quiz = ref.watch(quizProvider(videoId));
+    return quiz.when(
+      data: (item) =>
+          item == null ? const _MissingQuizScreen() : _GameContent(quiz: item),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stackTrace) => const _MissingQuizScreen(),
+    );
+  }
+}
+
+class _GameContent extends StatelessWidget {
+  const _GameContent({required this.quiz});
+
+  final QuizWithLiveStats quiz;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('ゲーム画面')));
+    final data = quiz.quiz;
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _GameHeader(quiz: quiz),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  _HintSection(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'コメント',
+                    children: [
+                      for (final comment in quiz.comments)
+                        _CommentHint(comment: comment),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _HintSection(
+                    icon: Icons.music_note_rounded,
+                    title: '歌詞',
+                    children: [
+                      for (final lyric in data.videoLyrics)
+                        _HintCard(text: lyric),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _HintSection(
+                    icon: Icons.info_outline_rounded,
+                    title: '楽曲情報',
+                    children: [
+                      _HintCard(
+                        text: '動画種別: ${videoGenreLabel(data.videoGenre)}',
+                      ),
+                      _HintCard(
+                        text:
+                            'ジャンル: ${data.musicGenres.map(genreLabel).join(' / ')}',
+                      ),
+                      _HintCard(
+                        text:
+                            '言語: ${data.musicLanguages.map(languageLabel).join(' / ')}',
+                      ),
+                      _HintCard(
+                        text: 'アーティスト: ${data.musicArtists.join(' / ')}',
+                      ),
+                      _HintCard(
+                        text: '楽曲リリース: ${formatDate(data.musicReleasedAt)}',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            _GameActions(videoId: data.videoId),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GameHeader extends StatelessWidget {
+  const _GameHeader({required this.quiz});
+
+  final QuizWithLiveStats quiz;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = quiz.quiz;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF505050), Color(0xFF151515)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                tooltip: 'ホームに戻る',
+                onPressed: context.goHome,
+                icon: const Icon(Icons.home_rounded),
+              ),
+              Text(
+                data.musicGenres.isEmpty
+                    ? 'ジャンル不明'
+                    : genreLabel(data.musicGenres.first),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.play_circle_outline_rounded,
+                  value: formatCompactCount(quiz.videoStats.viewCount),
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.thumb_up_alt_outlined,
+                  value: formatCompactCount(quiz.videoStats.likeCount),
+                ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.calendar_month_outlined,
+                  value: formatDate(data.videoPublishedAt),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({required this.icon, required this.value});
+
+  final IconData icon;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFFFF97D7)),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HintSection extends StatelessWidget {
+  const _HintSection({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(icon),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+}
+
+class _CommentHint extends StatelessWidget {
+  const _CommentHint({required this.comment});
+
+  final QuizCommentWithStats comment;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HintCard(
+      text: comment.comment.content,
+      footer:
+          '♡ ${formatCompactCount(comment.likeCount)}  ${formatRelativeDate(comment.comment.commentedAt)}',
+    );
+  }
+}
+
+class _HintCard extends StatelessWidget {
+  const _HintCard({required this.text, this.footer});
+
+  final String text;
+  final String? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF3A3A3A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(text),
+          if (footer != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              footer!,
+              style: const TextStyle(color: Color(0xFFB8B8B8), fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GameActions extends StatelessWidget {
+  const _GameActions({required this.videoId});
+
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF111111),
+        border: Border(top: BorderSide(color: Color(0xFF333333))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              key: const ValueKey('answer-button'),
+              onPressed: () => context.goToResult(videoId),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('回答する'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: () => context.goToResult(videoId),
+            child: const Text('スキップ'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissingQuizScreen extends StatelessWidget {
+  const _MissingQuizScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: FilledButton(
+          onPressed: context.goHome,
+          child: const Text('ホームに戻る'),
+        ),
+      ),
+    );
   }
 }

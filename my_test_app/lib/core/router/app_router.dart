@@ -15,14 +15,16 @@ GoRouter createAppRouter() {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
-        path: '/game',
+        path: '/game/:videoId',
         name: AppRoute.game.name,
-        builder: (context, state) => const GameScreen(),
+        builder: (context, state) =>
+            GameScreen(videoId: state.pathParameters['videoId']!),
       ),
       GoRoute(
-        path: '/result',
+        path: '/result/:videoId',
         name: AppRoute.result.name,
-        builder: (context, state) => const ResultScreen(),
+        builder: (context, state) =>
+            ResultScreen(videoId: state.pathParameters['videoId']!),
       ),
       GoRoute(
         path: '/library',
@@ -37,4 +39,12 @@ enum AppRoute { home, game, result, library }
 
 extension AppRouteNavigation on BuildContext {
   void goTo(AppRoute route) => goNamed(route.name);
+
+  void goHome() => goNamed(AppRoute.home.name);
+
+  void goToGame(String videoId) =>
+      goNamed(AppRoute.game.name, pathParameters: {'videoId': videoId});
+
+  void goToResult(String videoId) =>
+      goNamed(AppRoute.result.name, pathParameters: {'videoId': videoId});
 }

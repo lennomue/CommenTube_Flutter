@@ -26,4 +26,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/data/quizzes.json
+    - assets/mock_data/quizzes.json
+    - assets/mock_data/youtube_api_mock.json

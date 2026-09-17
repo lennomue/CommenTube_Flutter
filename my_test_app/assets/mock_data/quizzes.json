@@ -1,0 +1,147 @@
+[
+  {
+    "video_id": "y2bVIBwpCTA",
+    "thumbnail_comment_id": "comment_jackson_01",
+    "music_genre": ["r_and_b_soul", "pop"],
+    "video_genre": "music_video",
+    "music_title": "I Want You Back",
+    "music_artists": ["The Jackson 5"],
+    "music_languages": ["english"],
+    "music_released_at": "1969-10-07T00:00:00Z",
+    "video_published_at": "2020-06-14T19:00:08Z",
+    "video_lyrics": [
+      "Oh, baby, give me one more chance",
+      "Won't you please let me back in your heart",
+      "But now since I see you in his arms"
+    ],
+    "video_comments": [
+      {
+        "comment_id": "comment_jackson_01",
+        "commented_at": "2021-01-22T14:00:33Z",
+        "content": "Imagine a 10 year old sounding better than most artists today."
+      },
+      {
+        "comment_id": "comment_jackson_02",
+        "commented_at": "2025-03-10T13:00:08Z",
+        "content": "This performance still feels full of joy after all these years."
+      }
+    ],
+    "embedding": null
+  },
+  {
+    "video_id": "dQw4w9WgXcQ",
+    "thumbnail_comment_id": "comment_rick_01",
+    "music_genre": ["pop", "decade_1980s"],
+    "video_genre": "music_video",
+    "music_title": "Never Gonna Give You Up",
+    "music_artists": ["Rick Astley"],
+    "music_languages": ["english"],
+    "music_released_at": "1987-07-27T00:00:00Z",
+    "video_published_at": "2009-10-25T06:57:33Z",
+    "video_lyrics": [
+      "We're no strangers to love",
+      "You know the rules and so do I",
+      "Never gonna give you up"
+    ],
+    "video_comments": [
+      {
+        "comment_id": "comment_rick_01",
+        "commented_at": "2024-04-01T08:00:00Z",
+        "content": "The internet found a way to keep this song alive forever."
+      },
+      {
+        "comment_id": "comment_rick_02",
+        "commented_at": "2025-05-12T10:20:00Z",
+        "content": "I came for the joke and stayed because the song is genuinely good."
+      }
+    ],
+    "embedding": null
+  },
+  {
+    "video_id": "9bZkp7q19f0",
+    "thumbnail_comment_id": "comment_gangnam_01",
+    "music_genre": ["k_pop", "dance_electronic"],
+    "video_genre": "music_video",
+    "music_title": "GANGNAM STYLE",
+    "music_artists": ["PSY"],
+    "music_languages": ["korean"],
+    "music_released_at": "2012-07-15T00:00:00Z",
+    "video_published_at": "2012-07-15T07:46:32Z",
+    "video_lyrics": [
+      "Oppa Gangnam Style",
+      "A warm and human woman during the day",
+      "A classy girl who knows how to enjoy freedom"
+    ],
+    "video_comments": [
+      {
+        "comment_id": "comment_gangnam_01",
+        "commented_at": "2022-07-15T07:46:32Z",
+        "content": "A whole decade later and the choreography is still instantly recognizable."
+      },
+      {
+        "comment_id": "comment_gangnam_02",
+        "commented_at": "2025-01-03T12:10:00Z",
+        "content": "This video changed what a worldwide internet hit could look like."
+      }
+    ],
+    "embedding": null
+  },
+  {
+    "video_id": "kJQP7kiw5Fk",
+    "thumbnail_comment_id": "comment_despacito_01",
+    "music_genre": ["latin", "pop"],
+    "video_genre": "music_video",
+    "music_title": "Despacito",
+    "music_artists": ["Luis Fonsi", "Daddy Yankee"],
+    "music_languages": ["spanish"],
+    "music_released_at": "2017-01-12T00:00:00Z",
+    "video_published_at": "2017-01-13T05:00:02Z",
+    "video_lyrics": [
+      "Despacito",
+      "Quiero respirar tu cuello despacito",
+      "Deja que te diga cosas al oído"
+    ],
+    "video_comments": [
+      {
+        "comment_id": "comment_despacito_01",
+        "commented_at": "2023-01-13T05:00:02Z",
+        "content": "You do not need to speak the language to remember this melody."
+      },
+      {
+        "comment_id": "comment_despacito_02",
+        "commented_at": "2025-02-18T18:25:00Z",
+        "content": "The rhythm still turns any room into a summer party."
+      }
+    ],
+    "embedding": null
+  },
+  {
+    "video_id": "JGwWNGJdvx8",
+    "thumbnail_comment_id": "comment_shape_01",
+    "music_genre": ["pop"],
+    "video_genre": "music_video",
+    "music_title": "Shape of You",
+    "music_artists": ["Ed Sheeran"],
+    "music_languages": ["english"],
+    "music_released_at": "2017-01-06T00:00:00Z",
+    "video_published_at": "2017-01-30T10:57:50Z",
+    "video_lyrics": [
+      "The club isn't the best place to find a lover",
+      "I'm in love with the shape of you",
+      "We push and pull like a magnet do"
+    ],
+    "video_comments": [
+      {
+        "comment_id": "comment_shape_01",
+        "commented_at": "2022-01-30T10:57:50Z",
+        "content": "The percussion makes the opening recognizable in only a few seconds."
+      },
+      {
+        "comment_id": "comment_shape_02",
+        "commented_at": "2025-06-21T09:45:00Z",
+        "content": "This song was everywhere, but the video tells its own small story."
+      }
+    ],
+    "embedding": null
+  }
+]
