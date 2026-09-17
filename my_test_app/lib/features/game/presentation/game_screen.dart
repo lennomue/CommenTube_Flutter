@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/hint_progress.dart';
 import '../../../core/models/quiz.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
@@ -15,8 +16,9 @@ class GameScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final quiz = ref.watch(quizProvider(videoId));
     return quiz.when(
-      data: (item) =>
-          item == null ? const _MissingQuizScreen() : _GameContent(quiz: item),
+      data: (item) => item == null
+          ? const _MissingQuizScreen()
+          : _GameContent(key: ValueKey(item.quiz.videoId), quiz: item),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stackTrace) => const _MissingQuizScreen(),
@@ -24,70 +26,220 @@ class GameScreen extends ConsumerWidget {
   }
 }
 
-class _GameContent extends StatelessWidget {
-  const _GameContent({required this.quiz});
+class _GameContent extends StatefulWidget {
+  const _GameContent({super.key, required this.quiz});
 
   final QuizWithLiveStats quiz;
+
+  @override
+  State<_GameContent> createState() => _GameContentState();
+}
+
+class _GameContentState extends State<_GameContent> {
+  late final Set<String> _unlockedHintKeys;
+
+  @override
+  void initState() {
+    super.initState();
+    final representativeComment = widget.quiz.quiz.representativeComment;
+    _unlockedHintKeys = {
+      if (representativeComment != null)
+        HintKey.comment(representativeComment.commentId),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _GameScaffold(
+      quiz: widget.quiz,
+      progress: HintProgress(unlockedHintKeys: _unlockedHintKeys),
+      onUnlock: (hintKey) {
+        setState(() => _unlockedHintKeys.add(hintKey));
+      },
+    );
+  }
+}
+
+class _GameScaffold extends StatelessWidget {
+  const _GameScaffold({
+    required this.quiz,
+    required this.progress,
+    required this.onUnlock,
+  });
+
+  final QuizWithLiveStats quiz;
+  final HintProgress progress;
+  final ValueChanged<String> onUnlock;
 
   @override
   Widget build(BuildContext context) {
     final data = quiz.quiz;
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            _GameHeader(quiz: quiz),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  _HintSection(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    title: 'コメント',
-                    children: [
-                      for (final comment in quiz.comments)
-                        _CommentHint(comment: comment),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  _HintSection(
-                    icon: Icons.music_note_rounded,
-                    title: '歌詞',
-                    children: [
-                      for (final lyric in data.videoLyrics)
-                        _HintCard(text: lyric),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  _HintSection(
-                    icon: Icons.info_outline_rounded,
-                    title: '楽曲情報',
-                    children: [
-                      _HintCard(
-                        text: '動画種別: ${videoGenreLabel(data.videoGenre)}',
-                      ),
-                      _HintCard(
-                        text:
-                            'ジャンル: ${data.musicGenres.map(genreLabel).join(' / ')}',
-                      ),
-                      _HintCard(
-                        text:
-                            '言語: ${data.musicLanguages.map(languageLabel).join(' / ')}',
-                      ),
-                      _HintCard(
-                        text: 'アーティスト: ${data.musicArtists.join(' / ')}',
-                      ),
-                      _HintCard(
-                        text: '楽曲リリース: ${formatDate(data.musicReleasedAt)}',
-                      ),
-                    ],
-                  ),
-                ],
+        child: DefaultTabController(
+          length: 3,
+          child: Column(
+            children: [
+              _GameHeader(quiz: quiz),
+              const ColoredBox(
+                color: Color(0xFF111111),
+                child: TabBar(
+                  tabs: [
+                    Tab(
+                      icon: Icon(Icons.chat_bubble_outline_rounded),
+                      text: 'コメント',
+                    ),
+                    Tab(icon: Icon(Icons.music_note_rounded), text: '歌詞'),
+                    Tab(icon: Icon(Icons.info_outline_rounded), text: '楽曲情報'),
+                  ],
+                ),
               ),
-            ),
-            _GameActions(videoId: data.videoId),
-          ],
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _HintTabBody(
+                      children: [
+                        for (final indexed in quiz.comments.indexed)
+                          _UnlockableHint(
+                            hintKey: HintKey.comment(
+                              indexed.$2.comment.commentId,
+                            ),
+                            label: 'コメント ${indexed.$1 + 1}',
+                            progress: progress,
+                            onUnlock: onUnlock,
+                            child: _CommentHint(comment: indexed.$2),
+                          ),
+                      ],
+                    ),
+                    _HintTabBody(
+                      children: [
+                        for (final indexed in data.videoLyrics.indexed)
+                          _UnlockableHint(
+                            hintKey: HintKey.lyric(indexed.$1),
+                            label: '歌詞 ${indexed.$1 + 1}',
+                            progress: progress,
+                            onUnlock: onUnlock,
+                            child: _HintCard(text: indexed.$2),
+                          ),
+                      ],
+                    ),
+                    _HintTabBody(
+                      children: [
+                        _UnlockableHint(
+                          hintKey: HintKey.videoGenre,
+                          label: '動画種別',
+                          progress: progress,
+                          onUnlock: onUnlock,
+                          child: _HintCard(
+                            text: '動画種別: ${videoGenreLabel(data.videoGenre)}',
+                          ),
+                        ),
+                        _UnlockableHint(
+                          hintKey: HintKey.musicGenres,
+                          label: '楽曲ジャンル',
+                          progress: progress,
+                          onUnlock: onUnlock,
+                          child: _HintCard(
+                            text:
+                                'ジャンル: ${data.musicGenres.map(genreLabel).join(' / ')}',
+                          ),
+                        ),
+                        _UnlockableHint(
+                          hintKey: HintKey.musicLanguages,
+                          label: '言語',
+                          progress: progress,
+                          onUnlock: onUnlock,
+                          child: _HintCard(
+                            text:
+                                '言語: ${data.musicLanguages.map(languageLabel).join(' / ')}',
+                          ),
+                        ),
+                        _UnlockableHint(
+                          hintKey: HintKey.musicArtists,
+                          label: 'アーティスト',
+                          progress: progress,
+                          onUnlock: onUnlock,
+                          child: _HintCard(
+                            text: 'アーティスト: ${data.musicArtists.join(' / ')}',
+                          ),
+                        ),
+                        _UnlockableHint(
+                          hintKey: HintKey.musicReleasedAt,
+                          label: '楽曲リリース日',
+                          progress: progress,
+                          onUnlock: onUnlock,
+                          child: _HintCard(
+                            text: '楽曲リリース: ${formatDate(data.musicReleasedAt)}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              _GameActions(videoId: data.videoId),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _HintTabBody extends StatelessWidget {
+  const _HintTabBody({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: children,
+    );
+  }
+}
+
+class _UnlockableHint extends StatelessWidget {
+  const _UnlockableHint({
+    required this.hintKey,
+    required this.label,
+    required this.progress,
+    required this.onUnlock,
+    required this.child,
+  });
+
+  final String hintKey;
+  final String label;
+  final HintProgress progress;
+  final ValueChanged<String> onUnlock;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (progress.isUnlocked(hintKey)) {
+      return child;
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF3A3A3A)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_outline_rounded, color: Color(0xFFFF97D7)),
+          const SizedBox(width: 10),
+          Expanded(child: Text('$labelは未開放です')),
+          const SizedBox(width: 10),
+          FilledButton(
+            key: ValueKey('unlock-$hintKey'),
+            onPressed: () => onUnlock(hintKey),
+            child: const Text('開放'),
+          ),
+        ],
       ),
     );
   }
@@ -180,39 +332,6 @@ class _StatItem extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _HintSection extends StatelessWidget {
-  const _HintSection({
-    required this.icon,
-    required this.title,
-    required this.children,
-  });
-
-  final IconData icon;
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Icon(icon),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ...children,
       ],
     );
   }

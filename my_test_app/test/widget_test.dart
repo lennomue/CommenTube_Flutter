@@ -81,7 +81,28 @@ void main() {
     expect(find.text('コメント'), findsOneWidget);
     expect(find.text('歌詞'), findsOneWidget);
     expect(find.text('楽曲情報'), findsOneWidget);
+    expect(find.text('最初から見える代表コメントです。'), findsOneWidget);
+    expect(find.text('コメント 2は未開放です'), findsOneWidget);
+    expect(find.text('開放後に見える追加コメントです。'), findsNothing);
+
+    await tester.tap(
+      find.byKey(
+        const ValueKey('unlock-comment:comment-secondary-y2bVIBwpCTA'),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('開放後に見える追加コメントです。'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.home_rounded));
+    await _pumpAsyncScreen(tester);
+    await tester.tap(find.byKey(const ValueKey('quiz-card-y2bVIBwpCTA')));
+    await _pumpAsyncScreen(tester);
+
+    expect(find.text('最初から見える代表コメントです。'), findsOneWidget);
+    expect(find.text('コメント 2は未開放です'), findsOneWidget);
+    expect(find.text('開放後に見える追加コメントです。'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('skip-button')));
     await _pumpAsyncScreen(tester);
@@ -106,6 +127,7 @@ void main() {
 
 Future<void> _pumpAsyncScreen(WidgetTester tester) async {
   await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
   await tester.pump(const Duration(seconds: 1));
 }
 
@@ -133,15 +155,20 @@ QuizWithLiveStats _buildTestQuiz({
   required String title,
   required String artist,
 }) {
-  final comment = QuizComment(
+  final representativeComment = QuizComment(
     commentId: 'comment-$videoId',
     commentedAt: DateTime.utc(2025, 1, 1),
-    content: '世代を超えて楽しめる曲です。',
+    content: '最初から見える代表コメントです。',
+  );
+  final secondaryComment = QuizComment(
+    commentId: 'comment-secondary-$videoId',
+    commentedAt: DateTime.utc(2025, 2, 1),
+    content: '開放後に見える追加コメントです。',
   );
   return QuizWithLiveStats(
     quiz: Quiz(
       videoId: videoId,
-      thumbnailCommentId: comment.commentId,
+      thumbnailCommentId: representativeComment.commentId,
       musicGenres: const ['r_and_b_soul', 'pop'],
       videoGenre: 'music_video',
       musicTitle: title,
@@ -150,9 +177,12 @@ QuizWithLiveStats _buildTestQuiz({
       musicReleasedAt: DateTime.utc(1969, 10, 7),
       videoPublishedAt: DateTime.utc(2020, 6, 14),
       videoLyrics: const ['短い歌詞ヒント', 'もうひとつの歌詞ヒント'],
-      videoComments: [comment],
+      videoComments: [representativeComment, secondaryComment],
     ),
     videoStats: const VideoLiveStats(viewCount: 117264772, likeCount: 1351220),
-    comments: [QuizCommentWithStats(comment: comment, likeCount: 77307)],
+    comments: [
+      QuizCommentWithStats(comment: representativeComment, likeCount: 77307),
+      QuizCommentWithStats(comment: secondaryComment, likeCount: 1200),
+    ],
   );
 }
