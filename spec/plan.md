@@ -11,7 +11,7 @@
   現状での計画への理解が書かれている。当然より良い開発の道筋や変更すべき点があれば積極的に指摘してほしい。またデータベースの設計についてはあなたが触れる環境の中では解決しないものがあるだろうと思われる。その際にはその計画を実行するための手順を詳しく示してください。
   
 - `_commit.md`
-  コミットする毎に変更点を書き加える。コミットのタイミングはこちらから指示をするので、作業が一区切りしたタイミングで前回書いた時からの変更点を簡潔にAIが加筆する。
+  コミットする毎に変更点を書き加える。コミットのタイミングはplan.mdの作業が一区切りしたタイミングでお願いします。planに基づく説明でも、計画自体に変更点があればそれも含めて書きましょう。
 
 ## 2. 開発の進行
 - 前提や実装に際しての技術的課題に不明点があればわかったふりをすることなく確認すること。
@@ -30,7 +30,7 @@
 
 ここはすでに実装が終わっている箇所に重なるかと思う。修正が難しければmy_test_appでなく、新しいプロジェクトとして初めからやり直そう。
 **やること**
-- `flutter create`でプロジェクトを作成し、以下を`pubspec.yaml`に追加する: `flutter_riverpod`, `go_router`, `drift`(+`drift_dev`, `sqlite3_flutter_libs`), `webview_flutter`
+- `flutter create`でプロジェクトを作成し、以下を`pubspec.yaml`に追加する: `flutter_riverpod`, `go_router`, `drift`(+`drift_dev`, `build_runner`, `drift_flutter`, `path_provider`), `webview_flutter`。`sqlite3_flutter_libs`はDrift 2.32以降では不要になったため追加しない。
 - ディレクトリ構成を用意する(例): `lib/features/home/`, `lib/features/game/`, `lib/features/result/`, `lib/features/library/`, `lib/core/models/`, `lib/core/repositories/`, `assets/mock_data/`
 - `analysis_options.yaml`は`flutter create`のデフォルト(`flutter_lints`)のままとし、変更しない
 - go_routerでhome/game/result/libraryの4画面分の空のルートだけ定義する
