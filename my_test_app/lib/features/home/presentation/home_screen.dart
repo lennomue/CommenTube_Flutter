@@ -2,32 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/quiz.dart';
+import '../../../core/models/quiz_filter.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/display_formatters.dart';
+import 'home_filter_bar.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final quizzes = ref.watch(quizzesProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  QuizFilter _filter = QuizFilter.empty;
+
+  @override
+  Widget build(BuildContext context) {
+    final quizzes = ref.watch(filteredQuizzesProvider(_filter));
     return SafeArea(
       bottom: false,
       child: Column(
         children: [
           const _HomeHeader(),
+          HomeFilterBar(
+            filter: _filter,
+            onChanged: _setFilter,
+            onOpenDetails: _openDetailedFilters,
+          ),
           Expanded(
             child: quizzes.when(
-              data: (items) => _QuizFeed(quizzes: items),
+              data: (items) => items.isEmpty
+                  ? _EmptyQuizFeed(onClear: () => _setFilter(QuizFilter.empty))
+                  : _QuizFeed(quizzes: items),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) =>
-                  _LoadError(onRetry: () => ref.invalidate(quizzesProvider)),
+              error: (error, stackTrace) => _LoadError(
+                onRetry: () => ref.invalidate(filteredQuizzesProvider(_filter)),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _setFilter(QuizFilter filter) {
+    setState(() => _filter = filter);
+  }
+
+  Future<void> _openDetailedFilters() async {
+    final selected = await showDetailedQuizFilters(context, _filter);
+    if (selected != null && mounted) {
+      _setFilter(selected);
+    }
   }
 }
 
@@ -231,6 +259,31 @@ class _LoadError extends StatelessWidget {
           const SizedBox(height: 12),
           FilledButton(onPressed: onRetry, child: const Text('再読み込み')),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyQuizFeed extends StatelessWidget {
+  const _EmptyQuizFeed({required this.onClear});
+
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off_rounded, size: 44),
+            const SizedBox(height: 12),
+            const Text('条件に合う問題がありません'),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: onClear, child: const Text('条件をクリア')),
+          ],
+        ),
       ),
     );
   }

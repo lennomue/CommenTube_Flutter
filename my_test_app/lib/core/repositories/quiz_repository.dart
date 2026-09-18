@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../models/quiz.dart';
+import '../models/quiz_filter.dart';
 
 abstract interface class QuizRepository {
-  Future<List<QuizWithLiveStats>> getQuizzes();
+  Future<List<QuizWithLiveStats>> getQuizzes({
+    QuizFilter filter = QuizFilter.empty,
+  });
 
   Future<QuizWithLiveStats?> getQuiz(String videoId);
 }
@@ -21,8 +24,19 @@ class AssetQuizRepository implements QuizRepository {
   Future<List<QuizWithLiveStats>>? _cache;
 
   @override
-  Future<List<QuizWithLiveStats>> getQuizzes() {
-    return _cache ??= _loadQuizzes();
+  Future<List<QuizWithLiveStats>> getQuizzes({
+    QuizFilter filter = QuizFilter.empty,
+  }) async {
+    final quizzes = await (_cache ??= _loadQuizzes());
+    if (filter.isEmpty) {
+      return quizzes;
+    }
+
+    // This in-memory filter only validates the mock UX. Phase 7 replaces the
+    // implementation with a Supabase RPC while preserving this interface.
+    return quizzes
+        .where((item) => _matches(item.quiz, filter))
+        .toList(growable: false);
   }
 
   @override
@@ -34,6 +48,30 @@ class AssetQuizRepository implements QuizRepository {
       }
     }
     return null;
+  }
+
+  bool _matches(Quiz quiz, QuizFilter filter) {
+    final matchesMusicGenre =
+        filter.musicGenres.isEmpty ||
+        quiz.musicGenres.any(filter.musicGenres.contains);
+    final matchesLanguage =
+        filter.musicLanguages.isEmpty ||
+        quiz.musicLanguages.any(filter.musicLanguages.contains);
+    final matchesVideoGenre =
+        filter.videoGenres.isEmpty ||
+        filter.videoGenres.contains(quiz.videoGenre);
+    final publishedYear = quiz.videoPublishedAt.year;
+    final matchesFromYear =
+        filter.publishedFromYear == null ||
+        publishedYear >= filter.publishedFromYear!;
+    final matchesToYear =
+        filter.publishedToYear == null ||
+        publishedYear <= filter.publishedToYear!;
+    return matchesMusicGenre &&
+        matchesLanguage &&
+        matchesVideoGenre &&
+        matchesFromYear &&
+        matchesToYear;
   }
 
   Future<List<QuizWithLiveStats>> _loadQuizzes() async {

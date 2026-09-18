@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/quiz.dart';
+import '../models/quiz_filter.dart';
 import 'quiz_repository.dart';
 
 final quizRepositoryProvider = Provider<QuizRepository>((ref) {
@@ -10,6 +11,11 @@ final quizRepositoryProvider = Provider<QuizRepository>((ref) {
 final quizzesProvider = FutureProvider<List<QuizWithLiveStats>>((ref) {
   return ref.watch(quizRepositoryProvider).getQuizzes();
 });
+
+final filteredQuizzesProvider =
+    FutureProvider.family<List<QuizWithLiveStats>, QuizFilter>((ref, filter) {
+      return ref.watch(quizRepositoryProvider).getQuizzes(filter: filter);
+    });
 
 final quizProvider = FutureProvider.family<QuizWithLiveStats?, String>((
   ref,

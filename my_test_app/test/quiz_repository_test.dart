@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_test_app/core/models/quiz_filter.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
 
 void main() {
@@ -29,5 +30,31 @@ void main() {
       'Shape of You',
     );
     expect(await repository.getQuiz('missing-video'), isNull);
+  });
+
+  test('ジャンル・言語・投稿年をローカルで絞り込む', () async {
+    final repository = AssetQuizRepository();
+
+    final englishQuizzes = await repository.getQuizzes(
+      filter: const QuizFilter(musicLanguages: ['english']),
+    );
+    expect(englishQuizzes, hasLength(3));
+
+    final quizzesFrom2010s = await repository.getQuizzes(
+      filter: const QuizFilter(publishedFromYear: 2010, publishedToYear: 2019),
+    );
+    expect(
+      quizzesFrom2010s.map((item) => item.quiz.videoId),
+      containsAll(['9bZkp7q19f0', 'kJQP7kiw5Fk', 'JGwWNGJdvx8']),
+    );
+
+    final koreanDanceQuiz = await repository.getQuizzes(
+      filter: const QuizFilter(
+        musicGenres: ['dance_electronic'],
+        musicLanguages: ['korean'],
+        videoGenres: ['music_video'],
+      ),
+    );
+    expect(koreanDanceQuiz.single.quiz.musicTitle, 'GANGNAM STYLE');
   });
 }

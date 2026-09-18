@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_test_app/app.dart';
 import 'package:my_test_app/core/models/quiz.dart';
+import 'package:my_test_app/core/models/quiz_filter.dart';
 import 'package:my_test_app/core/repositories/quiz_providers.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
 
@@ -28,8 +29,27 @@ void main() {
     expect(find.text('ホーム'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
+    await tester.tap(find.byKey(const ValueKey('quick-filter-j-pop')));
+    await _pumpAsyncScreen(tester);
+    expect(find.text('条件に合う問題がありません'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-card-y2bVIBwpCTA')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('quick-filter-j-pop')));
+    await _pumpAsyncScreen(tester);
+    expect(find.byKey(const ValueKey('quiz-card-y2bVIBwpCTA')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('open-detailed-filters')));
+    await tester.pumpAndSettle();
+    expect(find.text('詳細な絞り込み'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('apply-detailed-filters')));
+    await tester.pumpAndSettle();
+
     final lastCard = find.byKey(const ValueKey('quiz-card-JGwWNGJdvx8'));
-    await tester.scrollUntilVisible(lastCard, 500);
+    await tester.scrollUntilVisible(
+      lastCard,
+      500,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(lastCard, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -166,7 +186,9 @@ class _TestQuizRepository implements QuizRepository {
   }
 
   @override
-  Future<List<QuizWithLiveStats>> getQuizzes() async => quizzes;
+  Future<List<QuizWithLiveStats>> getQuizzes({
+    QuizFilter filter = QuizFilter.empty,
+  }) async => quizzes;
 }
 
 QuizWithLiveStats _buildTestQuiz({
