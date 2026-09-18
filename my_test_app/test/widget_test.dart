@@ -14,7 +14,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const ProviderScope(child: CommenTubeApp()));
-    await tester.pumpAndSettle();
+    await _pumpAsyncScreen(tester);
 
     expect(find.text('CommenTube'), findsOneWidget);
     expect(find.byKey(const ValueKey('quiz-card-y2bVIBwpCTA')), findsOneWidget);
@@ -34,18 +34,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('ボトムナビゲーションでhomeとlibraryを行き来できる', (tester) async {
+  testWidgets('homeとlibrary間でフッターを保ったまま切り替えられる', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: CommenTubeApp()));
-    await tester.pump();
+    await _pumpAsyncScreen(tester);
+
+    final navigationBar = tester.element(
+      find.byKey(const ValueKey('app-navigation-bar')),
+    );
 
     await tester.tap(find.byIcon(Icons.video_library_outlined));
-    await tester.pumpAndSettle();
+    await _pumpAsyncScreen(tester);
     expect(find.text('ライブラリ画面'), findsOneWidget);
+    expect(
+      identical(
+        navigationBar,
+        tester.element(find.byKey(const ValueKey('app-navigation-bar'))),
+      ),
+      isTrue,
+    );
 
     await tester.tap(find.byIcon(Icons.home_outlined));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await _pumpAsyncScreen(tester);
     expect(find.text('CommenTube'), findsOneWidget);
+    expect(
+      identical(
+        navigationBar,
+        tester.element(find.byKey(const ValueKey('app-navigation-bar'))),
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('HomeからGameとResultを経由してHomeへ戻れる', (tester) async {
@@ -82,7 +99,8 @@ void main() {
     expect(find.text('歌詞'), findsOneWidget);
     expect(find.text('楽曲情報'), findsOneWidget);
     expect(find.text('最初から見える代表コメントです。'), findsOneWidget);
-    expect(find.text('コメント 2は未開放です'), findsOneWidget);
+    expect(find.text('コメント 2'), findsOneWidget);
+    expect(find.textContaining('未開放'), findsNothing);
     expect(find.text('開放後に見える追加コメントです。'), findsNothing);
 
     await tester.tap(
@@ -101,7 +119,8 @@ void main() {
     await _pumpAsyncScreen(tester);
 
     expect(find.text('最初から見える代表コメントです。'), findsOneWidget);
-    expect(find.text('コメント 2は未開放です'), findsOneWidget);
+    expect(find.text('コメント 2'), findsOneWidget);
+    expect(find.textContaining('未開放'), findsNothing);
     expect(find.text('開放後に見える追加コメントです。'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('skip-button')));

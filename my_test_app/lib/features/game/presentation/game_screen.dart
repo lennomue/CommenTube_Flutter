@@ -232,7 +232,7 @@ class _UnlockableHint extends StatelessWidget {
         children: [
           const Icon(Icons.lock_outline_rounded, color: Color(0xFFFF97D7)),
           const SizedBox(width: 10),
-          Expanded(child: Text('$labelは未開放です')),
+          Expanded(child: Text(label)),
           const SizedBox(width: 10),
           FilledButton(
             key: ValueKey('unlock-$hintKey'),
@@ -269,7 +269,7 @@ class _GameHeader extends StatelessWidget {
             children: [
               IconButton(
                 tooltip: 'ホームに戻る',
-                onPressed: context.goHome,
+                onPressed: context.returnHome,
                 icon: const Icon(Icons.home_rounded),
               ),
               Text(

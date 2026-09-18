@@ -6,14 +6,35 @@ import '../../features/game/presentation/answer_webview_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/library/presentation/library_screen.dart';
 import '../../features/result/presentation/result_screen.dart';
+import '../widgets/app_navigation_bar.dart';
 
 GoRouter createAppRouter() {
   return GoRouter(
     routes: [
-      GoRoute(
-        path: '/',
-        name: AppRoute.home.name,
-        builder: (context, state) => const HomeScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppNavigationScaffold(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                name: AppRoute.home.name,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/library',
+                name: AppRoute.library.name,
+                builder: (context, state) => const LibraryScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/game/:videoId',
@@ -33,11 +54,6 @@ GoRouter createAppRouter() {
         builder: (context, state) =>
             AnswerWebViewScreen(videoId: state.pathParameters['videoId']!),
       ),
-      GoRoute(
-        path: '/library',
-        name: AppRoute.library.name,
-        builder: (context, state) => const LibraryScreen(),
-      ),
     ],
   );
 }
@@ -45,9 +61,18 @@ GoRouter createAppRouter() {
 enum AppRoute { home, game, result, answer, library }
 
 extension AppRouteNavigation on BuildContext {
-  void goTo(AppRoute route) => goNamed(route.name);
-
   void goHome() => goNamed(AppRoute.home.name);
+
+  void returnHome() {
+    if (canPop()) {
+      pop();
+      return;
+    }
+    goHome();
+  }
+
+  void openGame(String videoId) =>
+      pushNamed(AppRoute.game.name, pathParameters: {'videoId': videoId});
 
   void goToGame(String videoId) =>
       goNamed(AppRoute.game.name, pathParameters: {'videoId': videoId});

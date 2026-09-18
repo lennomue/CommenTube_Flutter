@@ -5,7 +5,6 @@ import '../../../core/models/quiz.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/display_formatters.dart';
-import '../../../core/widgets/app_navigation_bar.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -13,24 +12,21 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final quizzes = ref.watch(quizzesProvider);
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const _HomeHeader(),
-            Expanded(
-              child: quizzes.when(
-                data: (items) => _QuizFeed(quizzes: items),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stackTrace) =>
-                    _LoadError(onRetry: () => ref.invalidate(quizzesProvider)),
-              ),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          const _HomeHeader(),
+          Expanded(
+            child: quizzes.when(
+              data: (items) => _QuizFeed(quizzes: items),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) =>
+                  _LoadError(onRetry: () => ref.invalidate(quizzesProvider)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      bottomNavigationBar: const AppNavigationBar(selectedIndex: 0),
     );
   }
 }
@@ -89,7 +85,7 @@ class _QuizFeed extends StatelessWidget {
           key: ValueKey('quiz-card-${quiz.quiz.videoId}'),
           quiz: quiz,
           colorIndex: index,
-          onTap: () => context.goToGame(quiz.quiz.videoId),
+          onTap: () => context.openGame(quiz.quiz.videoId),
         );
       },
     );
