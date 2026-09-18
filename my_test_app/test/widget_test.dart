@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_test_app/app.dart';
+import 'package:my_test_app/core/models/favorite.dart';
 import 'package:my_test_app/core/models/quiz.dart';
 import 'package:my_test_app/core/models/quiz_filter.dart';
+import 'package:my_test_app/core/repositories/favorite_providers.dart';
+import 'package:my_test_app/core/repositories/favorite_repository.dart';
 import 'package:my_test_app/core/repositories/quiz_providers.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
 
@@ -55,7 +60,25 @@ void main() {
   });
 
   testWidgets('homeとlibrary間でフッターを保ったまま切り替えられる', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: CommenTubeApp()));
+    final favoriteRepository = _TestFavoriteRepository([
+      SavedFavorite.comment(
+        videoId: 'video-1',
+        commentId: 'comment-1',
+        content: 'ライブラリのコメント',
+      ),
+      SavedFavorite.lyric(videoId: 'video-1', index: 0, content: 'ライブラリの歌詞'),
+      SavedFavorite.song(videoId: 'video-1', title: 'ライブラリの楽曲'),
+      SavedFavorite.artist('ライブラリのアーティスト'),
+    ]);
+    addTearDown(favoriteRepository.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+        ],
+        child: const CommenTubeApp(),
+      ),
+    );
     await _pumpAsyncScreen(tester);
 
     final navigationBar = tester.element(
@@ -64,7 +87,20 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.video_library_outlined));
     await _pumpAsyncScreen(tester);
-    expect(find.text('ライブラリ画面'), findsOneWidget);
+    expect(find.text('Library'), findsOneWidget);
+    expect(find.text('ライブラリのコメント'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(Tab, '歌詞'));
+    await tester.pumpAndSettle();
+    expect(find.text('ライブラリの歌詞'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(Tab, '楽曲'));
+    await tester.pumpAndSettle();
+    expect(find.text('ライブラリの楽曲'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(Tab, 'アーティスト'));
+    await tester.pumpAndSettle();
+    expect(find.text('ライブラリのアーティスト'), findsOneWidget);
     expect(
       identical(
         navigationBar,
@@ -103,9 +139,14 @@ void main() {
         artist: 'Rick Astley',
       ),
     ]);
+    final favoriteRepository = _TestFavoriteRepository();
+    addTearDown(favoriteRepository.close);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [quizRepositoryProvider.overrideWithValue(repository)],
+        overrides: [
+          quizRepositoryProvider.overrideWithValue(repository),
+          favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+        ],
         child: const CommenTubeApp(),
       ),
     );
@@ -148,6 +189,15 @@ void main() {
 
     expect(find.text('I Want You Back'), findsOneWidget);
     expect(find.text('The Jackson 5'), findsOneWidget);
+    expect(find.byKey(const ValueKey('share-song-button')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('favorite-song-y2bVIBwpCTA')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('favorite-artist-The Jackson 5')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('next-quiz-button')), findsOneWidget);
     final nextButton = tester.widget<FilledButton>(
       find.byKey(const ValueKey('next-quiz-button')),
@@ -155,12 +205,30 @@ void main() {
     expect(nextButton.onPressed, isNotNull);
     expect(tester.takeException(), isNull);
 
+    await tester.tap(find.byKey(const ValueKey('favorite-song-y2bVIBwpCTA')));
+    await tester.pump();
+
     await tester.tap(find.byKey(const ValueKey('result-home-button')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('CommenTube'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.video_library_outlined));
+    await _pumpAsyncScreen(tester);
+    await tester.tap(find.widgetWithText(Tab, '楽曲'));
+    await tester.pumpAndSettle();
+    expect(find.text('I Want You Back'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('library-favorite-song:y2bVIBwpCTA')),
+    );
+    await _pumpAsyncScreen(tester);
+    expect(find.text('I Want You Back'), findsWidgets);
+    expect(find.byKey(const ValueKey('close-library-detail')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('close-library-detail')));
+    await tester.pumpAndSettle();
   });
 }
 
@@ -189,6 +257,41 @@ class _TestQuizRepository implements QuizRepository {
   Future<List<QuizWithLiveStats>> getQuizzes({
     QuizFilter filter = QuizFilter.empty,
   }) async => quizzes;
+}
+
+class _TestFavoriteRepository implements FavoriteRepository {
+  _TestFavoriteRepository([Iterable<SavedFavorite> favorites = const []]) {
+    _favorites.addAll(favorites);
+  }
+
+  final List<SavedFavorite> _favorites = [];
+  final StreamController<List<SavedFavorite>> _controller =
+      StreamController<List<SavedFavorite>>.broadcast();
+
+  @override
+  Stream<List<SavedFavorite>> watchFavorites() async* {
+    yield List.unmodifiable(_favorites);
+    yield* _controller.stream;
+  }
+
+  @override
+  Future<void> toggleFavorite(SavedFavorite favorite) async {
+    final index = _favorites.indexWhere((item) => item.id == favorite.id);
+    if (index == -1) {
+      _favorites.add(favorite);
+    } else {
+      _favorites.removeAt(index);
+    }
+    _controller.add(List.unmodifiable(_favorites));
+  }
+
+  @override
+  Future<void> removeFavorite(String id) async {
+    _favorites.removeWhere((favorite) => favorite.id == id);
+    _controller.add(List.unmodifiable(_favorites));
+  }
+
+  Future<void> close() => _controller.close();
 }
 
 QuizWithLiveStats _buildTestQuiz({

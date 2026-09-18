@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_test_app/core/utils/youtube_link.dart';
 import 'package:my_test_app/core/utils/youtube_url.dart';
 
 void main() {
@@ -33,5 +34,12 @@ void main() {
     expect(isCorrectYouTubeAnswer(answerUrl, 'y2bVIBwpCTA'), isTrue);
     expect(isCorrectYouTubeAnswer(answerUrl, 'dQw4w9WgXcQ'), isFalse);
     expect(isCorrectYouTubeAnswer(null, 'y2bVIBwpCTA'), isFalse);
+  });
+
+  test('動画IDから共有・外部リンク用URLを作る', () {
+    expect(
+      youtubeWatchUri('y2bVIBwpCTA').toString(),
+      'https://www.youtube.com/watch?v=y2bVIBwpCTA',
+    );
   });
 }
