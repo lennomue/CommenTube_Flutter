@@ -12,8 +12,8 @@ abstract final class HintKey {
   static String lyric(int index) => 'lyric:$index';
 
   static const videoGenre = 'music_info:video_genre';
-  static const musicGenres = 'music_info:music_genres';
-  static const musicLanguages = 'music_info:music_languages';
-  static const musicArtists = 'music_info:music_artists';
+  static const contentGenres = 'video_info:content_genres';
+  static const languages = 'video_info:languages';
+  static const artists = 'video_info:artists';
   static const musicReleasedAt = 'music_info:music_released_at';
 }

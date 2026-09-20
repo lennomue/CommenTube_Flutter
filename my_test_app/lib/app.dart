@@ -38,11 +38,29 @@ class _CommenTubeAppState extends State<CommenTubeApp> {
       title: 'CommenTube',
       theme: ThemeData(
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFF7E84),
-          brightness: Brightness.dark,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.white,
+          onPrimary: Colors.black,
+          secondary: Color(0xFFE7E7E7),
+          onSecondary: Colors.black,
+          surface: Color(0xFF171717),
         ),
         scaffoldBackgroundColor: const Color(0xFF090909),
+        tabBarTheme: const TabBarThemeData(
+          labelColor: Colors.white,
+          unselectedLabelColor: Color(0xFF8C8C8C),
+          indicatorColor: Colors.white,
+        ),
+        chipTheme: const ChipThemeData(
+          backgroundColor: Color(0xFF3A3A3A),
+          selectedColor: Colors.white,
+          disabledColor: Color(0xFF262626),
+          labelStyle: TextStyle(color: Colors.white),
+          secondaryLabelStyle: TextStyle(color: Colors.black),
+          checkmarkColor: Colors.black,
+          side: BorderSide.none,
+          shape: StadiumBorder(),
+        ),
         useMaterial3: true,
       ),
       routerConfig: _router,

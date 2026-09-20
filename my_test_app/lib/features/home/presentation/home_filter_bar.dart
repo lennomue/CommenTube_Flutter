@@ -40,26 +40,26 @@ class HomeFilterBar extends StatelessWidget {
           _QuickFilterChip(
             filterKey: 'j-pop',
             label: 'J-Pop',
-            selected: filter.musicGenres.contains('j_pop'),
-            onSelected: () => onChanged(filter.toggleMusicGenre('j_pop')),
+            selected: filter.contentGenres.contains('j_pop'),
+            onSelected: () => onChanged(filter.toggleContentGenre('j_pop')),
           ),
           _QuickFilterChip(
             filterKey: 'rock',
             label: 'ロック',
-            selected: filter.musicGenres.contains('rock'),
-            onSelected: () => onChanged(filter.toggleMusicGenre('rock')),
+            selected: filter.contentGenres.contains('rock'),
+            onSelected: () => onChanged(filter.toggleContentGenre('rock')),
           ),
           _QuickFilterChip(
             filterKey: 'english',
             label: '英語（洋楽）',
-            selected: filter.musicLanguages.contains('english'),
-            onSelected: () => onChanged(filter.toggleMusicLanguage('english')),
+            selected: filter.languages.contains('english'),
+            onSelected: () => onChanged(filter.toggleLanguage('english')),
           ),
           _QuickFilterChip(
             filterKey: 'japanese',
             label: '日本語（邦楽）',
-            selected: filter.musicLanguages.contains('japanese'),
-            onSelected: () => onChanged(filter.toggleMusicLanguage('japanese')),
+            selected: filter.languages.contains('japanese'),
+            onSelected: () => onChanged(filter.toggleLanguage('japanese')),
           ),
           _QuickFilterChip(
             filterKey: '2010s',
@@ -184,19 +184,19 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               children: [
                 _FilterSection(
-                  title: '楽曲ジャンル',
+                  title: '内容ジャンル',
                   options: _musicGenreOptions,
-                  selectedValues: _filter.musicGenres,
-                  onToggle: (value) =>
-                      setState(() => _filter = _filter.toggleMusicGenre(value)),
+                  selectedValues: _filter.contentGenres,
+                  onToggle: (value) => setState(
+                    () => _filter = _filter.toggleContentGenre(value),
+                  ),
                 ),
                 _FilterSection(
                   title: '言語',
                   options: _languageOptions,
-                  selectedValues: _filter.musicLanguages,
-                  onToggle: (value) => setState(
-                    () => _filter = _filter.toggleMusicLanguage(value),
-                  ),
+                  selectedValues: _filter.languages,
+                  onToggle: (value) =>
+                      setState(() => _filter = _filter.toggleLanguage(value)),
                 ),
                 _FilterSection(
                   title: '動画ジャンル',

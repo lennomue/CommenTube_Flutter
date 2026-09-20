@@ -1,39 +1,43 @@
 class QuizFilter {
   const QuizFilter({
-    this.musicGenres = const [],
-    this.musicLanguages = const [],
+    this.contentGenres = const [],
+    this.languages = const [],
     this.videoGenres = const [],
+    this.artists = const [],
     this.publishedFromYear,
     this.publishedToYear,
   });
 
   static const empty = QuizFilter();
 
-  final List<String> musicGenres;
-  final List<String> musicLanguages;
+  final List<String> contentGenres;
+  final List<String> languages;
   final List<String> videoGenres;
+  final List<String> artists;
   final int? publishedFromYear;
   final int? publishedToYear;
 
   bool get isEmpty =>
-      musicGenres.isEmpty &&
-      musicLanguages.isEmpty &&
+      contentGenres.isEmpty &&
+      languages.isEmpty &&
       videoGenres.isEmpty &&
+      artists.isEmpty &&
       publishedFromYear == null &&
       publishedToYear == null;
 
   int get activeConditionCount =>
-      musicGenres.length +
-      musicLanguages.length +
+      contentGenres.length +
+      languages.length +
       videoGenres.length +
+      artists.length +
       (publishedFromYear == null && publishedToYear == null ? 0 : 1);
 
-  QuizFilter toggleMusicGenre(String genre) {
-    return copyWith(musicGenres: _toggled(musicGenres, genre));
+  QuizFilter toggleContentGenre(String genre) {
+    return copyWith(contentGenres: _toggled(contentGenres, genre));
   }
 
-  QuizFilter toggleMusicLanguage(String language) {
-    return copyWith(musicLanguages: _toggled(musicLanguages, language));
+  QuizFilter toggleLanguage(String language) {
+    return copyWith(languages: _toggled(languages, language));
   }
 
   QuizFilter toggleVideoGenre(String genre) {
@@ -42,23 +46,26 @@ class QuizFilter {
 
   QuizFilter withPublishedYears({required int? from, required int? to}) {
     return QuizFilter(
-      musicGenres: musicGenres,
-      musicLanguages: musicLanguages,
+      contentGenres: contentGenres,
+      languages: languages,
       videoGenres: videoGenres,
+      artists: artists,
       publishedFromYear: from,
       publishedToYear: to,
     );
   }
 
   QuizFilter copyWith({
-    List<String>? musicGenres,
-    List<String>? musicLanguages,
+    List<String>? contentGenres,
+    List<String>? languages,
     List<String>? videoGenres,
+    List<String>? artists,
   }) {
     return QuizFilter(
-      musicGenres: musicGenres ?? this.musicGenres,
-      musicLanguages: musicLanguages ?? this.musicLanguages,
+      contentGenres: contentGenres ?? this.contentGenres,
+      languages: languages ?? this.languages,
       videoGenres: videoGenres ?? this.videoGenres,
+      artists: artists ?? this.artists,
       publishedFromYear: publishedFromYear,
       publishedToYear: publishedToYear,
     );
@@ -67,18 +74,20 @@ class QuizFilter {
   @override
   bool operator ==(Object other) {
     return other is QuizFilter &&
-        _listEquals(musicGenres, other.musicGenres) &&
-        _listEquals(musicLanguages, other.musicLanguages) &&
+        _listEquals(contentGenres, other.contentGenres) &&
+        _listEquals(languages, other.languages) &&
         _listEquals(videoGenres, other.videoGenres) &&
+        _listEquals(artists, other.artists) &&
         publishedFromYear == other.publishedFromYear &&
         publishedToYear == other.publishedToYear;
   }
 
   @override
   int get hashCode => Object.hash(
-    Object.hashAll(musicGenres),
-    Object.hashAll(musicLanguages),
+    Object.hashAll(contentGenres),
+    Object.hashAll(languages),
     Object.hashAll(videoGenres),
+    Object.hashAll(artists),
     publishedFromYear,
     publishedToYear,
   );

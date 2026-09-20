@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/favorite.dart';
-import '../../../core/models/quiz.dart';
 import '../../../core/repositories/favorite_providers.dart';
 import '../../../core/repositories/quiz_providers.dart';
-import '../../../core/utils/display_formatters.dart';
-import '../../../core/utils/youtube_link.dart';
+import '../../../core/router/app_router.dart';
+import '../../result/presentation/quiz_detail_panel.dart';
 
-class LibraryScreen extends ConsumerWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
+  @override
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   static const _tabs = [
     (FavoriteKind.comment, Icons.chat_bubble_outline_rounded, 'コメント'),
     (FavoriteKind.lyric, Icons.music_note_rounded, '歌詞'),
@@ -18,8 +22,17 @@ class LibraryScreen extends ConsumerWidget {
     (FavoriteKind.artist, Icons.person_outline_rounded, 'アーティスト'),
   ];
 
+  final _searchController = TextEditingController();
+  String _query = '';
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final favorites = ref.watch(favoritesProvider);
     return SafeArea(
       bottom: false,
@@ -29,10 +42,38 @@ class LibraryScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 18, 20, 12),
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
               child: Text(
                 'Library',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: TextField(
+                key: const ValueKey('library-search-field'),
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: 'お気に入りを検索',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: '検索をクリア',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                  filled: true,
+                  fillColor: const Color(0xFF1B1B1B),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(14)),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
             ),
             TabBar(
@@ -49,9 +90,8 @@ class LibraryScreen extends ConsumerWidget {
                     for (final tab in _tabs)
                       _FavoriteList(
                         kind: tab.$1,
-                        favorites: items
-                            .where((item) => item.kind == tab.$1)
-                            .toList(growable: false),
+                        favorites: _matchingFavorites(items, tab.$1),
+                        hasQuery: _query.trim().isNotEmpty,
                       ),
                   ],
                 ),
@@ -64,18 +104,37 @@ class LibraryScreen extends ConsumerWidget {
       ),
     );
   }
+
+  List<SavedFavorite> _matchingFavorites(
+    List<SavedFavorite> items,
+    FavoriteKind kind,
+  ) {
+    final query = _query.trim().toLowerCase();
+    return items
+        .where(
+          (item) =>
+              item.kind == kind &&
+              (query.isEmpty || item.displayText.toLowerCase().contains(query)),
+        )
+        .toList(growable: false);
+  }
 }
 
-class _FavoriteList extends ConsumerWidget {
-  const _FavoriteList({required this.kind, required this.favorites});
+class _FavoriteList extends StatelessWidget {
+  const _FavoriteList({
+    required this.kind,
+    required this.favorites,
+    required this.hasQuery,
+  });
 
   final FavoriteKind kind;
   final List<SavedFavorite> favorites;
+  final bool hasQuery;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (favorites.isEmpty) {
-      return _EmptyFavorites(kind: kind);
+      return _EmptyFavorites(kind: kind, hasQuery: hasQuery);
     }
     return ListView.separated(
       key: PageStorageKey('favorite-list-${kind.name}'),
@@ -84,24 +143,18 @@ class _FavoriteList extends ConsumerWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final favorite = favorites[index];
-        final opensDetail = favorite.videoId != null;
         return Material(
           color: const Color(0xFF1C1C1C),
           borderRadius: BorderRadius.circular(14),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             key: ValueKey('library-favorite-${favorite.id}'),
-            onTap: opensDetail
-                ? () => _showQuizDetail(context, favorite.videoId!)
-                : null,
+            onTap: () => _openFavorite(context, favorite),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
               child: Row(
                 children: [
-                  Icon(
-                    _kindIcon(favorite.kind),
-                    color: const Color(0xFFFF97D7),
-                  ),
+                  Icon(_kindIcon(favorite.kind), color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -110,16 +163,7 @@ class _FavoriteList extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (opensDetail)
-                    const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                  IconButton(
-                    key: ValueKey('remove-favorite-${favorite.id}'),
-                    tooltip: 'お気に入りから削除',
-                    onPressed: () => ref
-                        .read(favoriteRepositoryProvider)
-                        .removeFavorite(favorite.id),
-                    icon: const Icon(Icons.bookmark_remove_rounded),
-                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                 ],
               ),
             ),
@@ -129,21 +173,36 @@ class _FavoriteList extends ConsumerWidget {
     );
   }
 
-  Future<void> _showQuizDetail(BuildContext context, String videoId) {
-    return showModalBottomSheet<void>(
+  void _openFavorite(BuildContext context, SavedFavorite favorite) {
+    if (favorite.kind == FavoriteKind.artist) {
+      context.openArtist(favorite.itemKey);
+      return;
+    }
+    final videoId = favorite.videoId;
+    if (videoId != null) {
+      _showQuizDetail(context, videoId);
+    }
+  }
+
+  Future<void> _showQuizDetail(BuildContext context, String videoId) async {
+    final artist = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: const Color(0xFF171717),
       builder: (context) => _LibraryQuizDetail(videoId: videoId),
     );
+    if (artist != null && context.mounted) {
+      context.openArtist(artist);
+    }
   }
 }
 
 class _EmptyFavorites extends StatelessWidget {
-  const _EmptyFavorites({required this.kind});
+  const _EmptyFavorites({required this.kind, required this.hasQuery});
 
   final FavoriteKind kind;
+  final bool hasQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -155,12 +214,18 @@ class _EmptyFavorites extends StatelessWidget {
           children: [
             Icon(_kindIcon(kind), size: 44, color: const Color(0xFF777777)),
             const SizedBox(height: 12),
-            Text('お気に入りの${_kindLabel(kind)}はまだありません'),
-            const SizedBox(height: 6),
-            const Text(
-              'Result画面から追加できます',
-              style: TextStyle(color: Color(0xFFAAAAAA)),
+            Text(
+              hasQuery
+                  ? '検索に一致する${_kindLabel(kind)}はありません'
+                  : 'お気に入りの${_kindLabel(kind)}はまだありません',
             ),
+            if (!hasQuery) ...[
+              const SizedBox(height: 6),
+              const Text(
+                'Result画面から追加できます',
+                style: TextStyle(color: Color(0xFFAAAAAA)),
+              ),
+            ],
           ],
         ),
       ),
@@ -177,161 +242,24 @@ class _LibraryQuizDetail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final quiz = ref.watch(quizProvider(videoId));
     return FractionallySizedBox(
-      heightFactor: 0.9,
+      heightFactor: 0.92,
       child: quiz.when(
         data: (item) => item == null
             ? _DetailMessage(onClose: () => Navigator.pop(context))
-            : _DetailContent(quiz: item),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) =>
-            _DetailMessage(onClose: () => Navigator.pop(context)),
-      ),
-    );
-  }
-}
-
-class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.quiz});
-
-  final QuizWithLiveStats quiz;
-
-  @override
-  Widget build(BuildContext context) {
-    final data = quiz.quiz;
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 8, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.musicTitle,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        data.musicArtists.join(' / '),
-                        style: const TextStyle(color: Color(0xFFBBBBBB)),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
+            : QuizDetailPanel(
+                quiz: item,
+                onArtistOpen: (artist) => Navigator.pop(context, artist),
+                leading: IconButton(
                   key: const ValueKey('close-library-detail'),
                   tooltip: '閉じる',
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '▷ ${formatCompactCount(quiz.videoStats.viewCount)}   '
-                    '♡ ${formatCompactCount(quiz.videoStats.likeCount)}',
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'YouTubeを開く',
-                  onPressed: () => openYouTubeVideo(data.videoId),
-                  icon: const Icon(Icons.play_circle_fill_rounded),
-                ),
-              ],
-            ),
-          ),
-          const TabBar(
-            tabs: [
-              Tab(text: 'コメント'),
-              Tab(text: '歌詞'),
-              Tab(text: '楽曲情報'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _DetailList(
-                  children: [
-                    for (final comment in quiz.comments)
-                      _DetailCard(text: comment.comment.content),
-                  ],
-                ),
-                _DetailList(
-                  children: [
-                    for (final lyric in data.videoLyrics)
-                      _DetailCard(text: lyric),
-                  ],
-                ),
-                _DetailList(
-                  children: [
-                    _DetailCard(
-                      text:
-                          'ジャンル: ${data.musicGenres.map(genreLabel).join(' / ')}',
-                    ),
-                    _DetailCard(
-                      text: '動画種別: ${videoGenreLabel(data.videoGenre)}',
-                    ),
-                    _DetailCard(
-                      text:
-                          '言語: ${data.musicLanguages.map(languageLabel).join(' / ')}',
-                    ),
-                    _DetailCard(
-                      text: 'リリース: ${formatDate(data.musicReleasedAt)}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) =>
+            _DetailMessage(onClose: () => Navigator.pop(context)),
       ),
-    );
-  }
-}
-
-class _DetailList extends StatelessWidget {
-  const _DetailList({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: children,
-    );
-  }
-}
-
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF242424),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(text),
     );
   }
 }

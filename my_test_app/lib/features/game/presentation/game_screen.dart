@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/hint_progress.dart';
 import '../../../core/models/quiz.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/state/quiz_experience_controller.dart';
 import '../../../core/utils/display_formatters.dart';
 
 class GameScreen extends ConsumerWidget {
@@ -18,7 +20,20 @@ class GameScreen extends ConsumerWidget {
     return quiz.when(
       data: (item) => item == null
           ? const _MissingQuizScreen()
-          : _GameContent(key: ValueKey(item.quiz.videoId), quiz: item),
+          : _GameContent(
+              key: ValueKey(item.quiz.videoId),
+              quiz: item,
+              onMinimize: () {
+                ref
+                    .read(minimizedQuizExperienceProvider.notifier)
+                    .minimize(QuizExperienceKind.game, item.quiz.videoId);
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  context.goHome();
+                }
+              },
+            ),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stackTrace) => const _MissingQuizScreen(),
@@ -27,9 +42,10 @@ class GameScreen extends ConsumerWidget {
 }
 
 class _GameContent extends StatefulWidget {
-  const _GameContent({super.key, required this.quiz});
+  const _GameContent({super.key, required this.quiz, required this.onMinimize});
 
   final QuizWithLiveStats quiz;
+  final VoidCallback onMinimize;
 
   @override
   State<_GameContent> createState() => _GameContentState();
@@ -37,165 +53,217 @@ class _GameContent extends StatefulWidget {
 
 class _GameContentState extends State<_GameContent> {
   late final Set<String> _unlockedHintKeys;
+  bool _isCompact = false;
+  _AnswerFeedback? _feedback;
 
   @override
   void initState() {
     super.initState();
-    final representativeComment = widget.quiz.quiz.representativeComment;
+    final data = widget.quiz.quiz;
     _unlockedHintKeys = {
-      if (representativeComment != null)
-        HintKey.comment(representativeComment.commentId),
+      if (data.thumbnailHintType == ThumbnailHintType.comment &&
+          data.comments.isNotEmpty)
+        HintKey.comment(data.comments.first.commentId),
+      if (data.thumbnailHintType == ThumbnailHintType.lyric &&
+          data.musicLyrics.isNotEmpty)
+        HintKey.lyric(0),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    return _GameScaffold(
-      quiz: widget.quiz,
-      progress: HintProgress(unlockedHintKeys: _unlockedHintKeys),
-      onUnlock: (hintKey) {
-        setState(() => _unlockedHintKeys.add(hintKey));
-      },
-    );
-  }
-}
-
-class _GameScaffold extends StatelessWidget {
-  const _GameScaffold({
-    required this.quiz,
-    required this.progress,
-    required this.onUnlock,
-  });
-
-  final QuizWithLiveStats quiz;
-  final HintProgress progress;
-  final ValueChanged<String> onUnlock;
-
-  @override
-  Widget build(BuildContext context) {
+    final quiz = widget.quiz;
     final data = quiz.quiz;
+    final progress = HintProgress(unlockedHintKeys: _unlockedHintKeys);
     return Scaffold(
       body: SafeArea(
         child: DefaultTabController(
           length: 3,
-          child: Column(
+          child: Stack(
             children: [
-              _GameHeader(quiz: quiz),
-              const ColoredBox(
-                color: Color(0xFF111111),
-                child: TabBar(
-                  tabs: [
-                    Tab(
-                      icon: Icon(Icons.chat_bubble_outline_rounded),
-                      text: 'コメント',
-                    ),
-                    Tab(icon: Icon(Icons.music_note_rounded), text: '歌詞'),
-                    Tab(icon: Icon(Icons.info_outline_rounded), text: '楽曲情報'),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _HintTabBody(
-                      children: [
-                        for (final indexed in quiz.comments.indexed)
-                          _UnlockableHint(
-                            hintKey: HintKey.comment(
-                              indexed.$2.comment.commentId,
+              Column(
+                children: [
+                  _GameHeader(quiz: quiz, onMinimize: widget.onMinimize),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    alignment: Alignment.topCenter,
+                    child: _isCompact
+                        ? const SizedBox(width: double.infinity)
+                        : const ColoredBox(
+                            key: ValueKey('game-hint-tabs'),
+                            color: Color(0xFF111111),
+                            child: TabBar(
+                              tabs: [
+                                Tab(
+                                  icon: Icon(Icons.chat_bubble_outline_rounded),
+                                  text: 'コメント',
+                                ),
+                                Tab(
+                                  icon: Icon(Icons.music_note_rounded),
+                                  text: '歌詞',
+                                ),
+                                Tab(
+                                  icon: Icon(Icons.info_outline_rounded),
+                                  text: '楽曲情報',
+                                ),
+                              ],
                             ),
-                            label: 'コメント ${indexed.$1 + 1}',
-                            progress: progress,
-                            onUnlock: onUnlock,
-                            child: _CommentHint(comment: indexed.$2),
                           ),
-                      ],
-                    ),
-                    _HintTabBody(
+                  ),
+                  Expanded(
+                    child: TabBarView(
                       children: [
-                        for (final indexed in data.videoLyrics.indexed)
-                          _UnlockableHint(
-                            hintKey: HintKey.lyric(indexed.$1),
-                            label: '歌詞 ${indexed.$1 + 1}',
-                            progress: progress,
-                            onUnlock: onUnlock,
-                            child: _HintCard(text: indexed.$2),
-                          ),
+                        _HintTabBody(
+                          onScrollDirection: _handleScrollDirection,
+                          children: [
+                            for (final indexed in quiz.comments.indexed)
+                              _UnlockableHint(
+                                hintKey: HintKey.comment(
+                                  indexed.$2.comment.commentId,
+                                ),
+                                label: 'コメント ${indexed.$1 + 1}',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _CommentHint(comment: indexed.$2),
+                              ),
+                          ],
+                        ),
+                        _HintTabBody(
+                          onScrollDirection: _handleScrollDirection,
+                          children: [
+                            for (final indexed in data.musicLyrics.indexed)
+                              _UnlockableHint(
+                                hintKey: HintKey.lyric(indexed.$1),
+                                label: '歌詞 ${indexed.$1 + 1}',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(text: indexed.$2),
+                              ),
+                          ],
+                        ),
+                        _HintTabBody(
+                          onScrollDirection: _handleScrollDirection,
+                          children: [
+                            _UnlockableHint(
+                              hintKey: HintKey.videoGenre,
+                              label: '動画種別',
+                              progress: progress,
+                              onUnlock: _unlock,
+                              child: _HintCard(
+                                text:
+                                    '動画種別: ${videoGenreLabel(data.videoGenre)}',
+                              ),
+                            ),
+                            _UnlockableHint(
+                              hintKey: HintKey.contentGenres,
+                              label: '内容ジャンル',
+                              progress: progress,
+                              onUnlock: _unlock,
+                              child: _HintCard(
+                                text:
+                                    'ジャンル: ${data.contentGenres.map(genreLabel).join(' / ')}',
+                              ),
+                            ),
+                            _UnlockableHint(
+                              hintKey: HintKey.languages,
+                              label: '言語',
+                              progress: progress,
+                              onUnlock: _unlock,
+                              child: _HintCard(
+                                text:
+                                    '言語: ${data.languages.map(languageLabel).join(' / ')}',
+                              ),
+                            ),
+                            _UnlockableHint(
+                              hintKey: HintKey.artists,
+                              label: 'アーティスト',
+                              progress: progress,
+                              onUnlock: _unlock,
+                              child: _HintCard(
+                                text: 'アーティスト: ${data.artistNames.join(' / ')}',
+                              ),
+                            ),
+                            _UnlockableHint(
+                              hintKey: HintKey.musicReleasedAt,
+                              label: '楽曲リリース日',
+                              progress: progress,
+                              onUnlock: _unlock,
+                              child: _HintCard(
+                                text:
+                                    '楽曲リリース: ${formatPartialDate(data.musicReleasedAt)}',
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    _HintTabBody(
-                      children: [
-                        _UnlockableHint(
-                          hintKey: HintKey.videoGenre,
-                          label: '動画種別',
-                          progress: progress,
-                          onUnlock: onUnlock,
-                          child: _HintCard(
-                            text: '動画種別: ${videoGenreLabel(data.videoGenre)}',
-                          ),
-                        ),
-                        _UnlockableHint(
-                          hintKey: HintKey.musicGenres,
-                          label: '楽曲ジャンル',
-                          progress: progress,
-                          onUnlock: onUnlock,
-                          child: _HintCard(
-                            text:
-                                'ジャンル: ${data.musicGenres.map(genreLabel).join(' / ')}',
-                          ),
-                        ),
-                        _UnlockableHint(
-                          hintKey: HintKey.musicLanguages,
-                          label: '言語',
-                          progress: progress,
-                          onUnlock: onUnlock,
-                          child: _HintCard(
-                            text:
-                                '言語: ${data.musicLanguages.map(languageLabel).join(' / ')}',
-                          ),
-                        ),
-                        _UnlockableHint(
-                          hintKey: HintKey.musicArtists,
-                          label: 'アーティスト',
-                          progress: progress,
-                          onUnlock: onUnlock,
-                          child: _HintCard(
-                            text: 'アーティスト: ${data.musicArtists.join(' / ')}',
-                          ),
-                        ),
-                        _UnlockableHint(
-                          hintKey: HintKey.musicReleasedAt,
-                          label: '楽曲リリース日',
-                          progress: progress,
-                          onUnlock: onUnlock,
-                          child: _HintCard(
-                            text: '楽曲リリース: ${formatDate(data.musicReleasedAt)}',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              _GameActions(videoId: data.videoId),
+              _FloatingGameActions(
+                compact: _isCompact,
+                onAnswer: _answer,
+                onSkip: () => context.goToResult(data.videoId),
+              ),
+              if (_feedback != null) _AnswerFeedbackOverlay(_feedback!),
             ],
           ),
         ),
       ),
     );
   }
+
+  void _unlock(String hintKey) {
+    setState(() => _unlockedHintKeys.add(hintKey));
+  }
+
+  void _handleScrollDirection(ScrollDirection direction) {
+    final compact = direction == ScrollDirection.reverse;
+    if (direction == ScrollDirection.idle || compact == _isCompact) {
+      return;
+    }
+    setState(() => _isCompact = compact);
+  }
+
+  Future<void> _answer() async {
+    final isCorrect = await context.openAnswerWebView(widget.quiz.quiz.videoId);
+    if (!mounted || isCorrect == null) {
+      return;
+    }
+    setState(() {
+      _feedback = isCorrect
+          ? _AnswerFeedback.correct
+          : _AnswerFeedback.incorrect;
+    });
+    await Future<void>.delayed(Duration(milliseconds: isCorrect ? 700 : 1000));
+    if (!mounted) {
+      return;
+    }
+    if (isCorrect) {
+      context.goToResult(widget.quiz.quiz.videoId);
+      return;
+    }
+    setState(() => _feedback = null);
+  }
 }
 
 class _HintTabBody extends StatelessWidget {
-  const _HintTabBody({required this.children});
+  const _HintTabBody({required this.children, required this.onScrollDirection});
 
   final List<Widget> children;
+  final ValueChanged<ScrollDirection> onScrollDirection;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: children,
+    return NotificationListener<UserScrollNotification>(
+      onNotification: (notification) {
+        onScrollDirection(notification.direction);
+        return false;
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 156),
+        children: children,
+      ),
     );
   }
 }
@@ -230,7 +298,7 @@ class _UnlockableHint extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock_outline_rounded, color: Color(0xFFFF97D7)),
+          const Icon(Icons.lock_outline_rounded, color: Colors.white),
           const SizedBox(width: 10),
           Expanded(child: Text(label)),
           const SizedBox(width: 10),
@@ -246,68 +314,79 @@ class _UnlockableHint extends StatelessWidget {
 }
 
 class _GameHeader extends StatelessWidget {
-  const _GameHeader({required this.quiz});
+  const _GameHeader({required this.quiz, required this.onMinimize});
 
   final QuizWithLiveStats quiz;
+  final VoidCallback onMinimize;
 
   @override
   Widget build(BuildContext context) {
     final data = quiz.quiz;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF505050), Color(0xFF151515)],
+    return GestureDetector(
+      key: const ValueKey('game-minimize-area'),
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragEnd: (details) {
+        if ((details.primaryVelocity ?? 0) > 300) {
+          onMinimize();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF505050), Color(0xFF151515)],
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                tooltip: 'ホームに戻る',
-                onPressed: context.returnHome,
-                icon: const Icon(Icons.home_rounded),
-              ),
-              Text(
-                data.musicGenres.isEmpty
-                    ? 'ジャンル不明'
-                    : genreLabel(data.musicGenres.first),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  key: const ValueKey('minimize-game-button'),
+                  tooltip: 'ゲームを小さくする',
+                  onPressed: onMinimize,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
                 ),
-              ),
-              const SizedBox(width: 48),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _StatItem(
-                  icon: Icons.play_circle_outline_rounded,
-                  value: formatCompactCount(quiz.videoStats.viewCount),
+                Text(
+                  data.contentGenres.isEmpty
+                      ? 'ジャンル不明'
+                      : genreLabel(data.contentGenres.first),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _StatItem(
-                  icon: Icons.thumb_up_alt_outlined,
-                  value: formatCompactCount(quiz.videoStats.likeCount),
+                const SizedBox(width: 48),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatItem(
+                    icon: Icons.play_circle_outline_rounded,
+                    value: formatCompactCount(quiz.videoStats.viewCount),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _StatItem(
-                  icon: Icons.calendar_month_outlined,
-                  value: formatDate(data.videoPublishedAt),
+                Expanded(
+                  child: _StatItem(
+                    icon: Icons.thumb_up_alt_outlined,
+                    value: formatCompactCount(quiz.videoStats.likeCount),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: _StatItem(
+                    icon: Icons.calendar_month_outlined,
+                    value: formatDate(data.postedAt),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -323,7 +402,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFFFF97D7)),
+        Icon(icon, color: Colors.white),
         const SizedBox(height: 4),
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -385,54 +464,156 @@ class _HintCard extends StatelessWidget {
   }
 }
 
-class _GameActions extends StatelessWidget {
-  const _GameActions({required this.videoId});
+class _FloatingGameActions extends StatelessWidget {
+  const _FloatingGameActions({
+    required this.compact,
+    required this.onAnswer,
+    required this.onSkip,
+  });
 
-  final String videoId;
+  final bool compact;
+  final VoidCallback onAnswer;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFF111111),
-        border: Border(top: BorderSide(color: Color(0xFF333333))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: FilledButton.icon(
-              key: const ValueKey('answer-button'),
-              onPressed: () => _answer(context),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('回答する'),
+    final answerSize = compact ? 62.0 : 112.0;
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: false,
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              left: 0,
+              right: 0,
+              bottom: compact ? 12 : 24,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Semantics(
+                  button: true,
+                  label: '回答する',
+                  child: Material(
+                    key: const ValueKey('answer-button'),
+                    color: Colors.white,
+                    elevation: 12,
+                    shadowColor: Colors.black,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: onAnswer,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 240),
+                        width: answerSize,
+                        height: answerSize,
+                        alignment: Alignment.center,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: compact
+                              ? const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.black,
+                                  size: 34,
+                                )
+                              : const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Colors.black,
+                                      size: 38,
+                                    ),
+                                    Text(
+                                      'ANSWER',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton(
-            key: const ValueKey('skip-button'),
-            onPressed: () => context.goToResult(videoId),
-            child: const Text('スキップ'),
-          ),
-        ],
+            Positioned(
+              right: 16,
+              bottom: 20,
+              child: Semantics(
+                button: true,
+                label: 'スキップ',
+                child: Material(
+                  key: const ValueKey('skip-button'),
+                  color: const Color(0xFF303030),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: onSkip,
+                    child: const SizedBox.square(
+                      dimension: 50,
+                      child: Icon(
+                        Icons.skip_next_rounded,
+                        color: Color(0xFFBEBEBE),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Future<void> _answer(BuildContext context) async {
-    final isCorrect = await context.openAnswerWebView(videoId);
-    if (!context.mounted || isCorrect == null) {
-      return;
-    }
-    if (isCorrect) {
-      context.goToResult(videoId);
-      return;
-    }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('不正解です。ヒントを確認してもう一度挑戦しましょう。')),
-      );
+enum _AnswerFeedback { correct, incorrect }
+
+class _AnswerFeedbackOverlay extends StatelessWidget {
+  const _AnswerFeedbackOverlay(this.feedback);
+
+  final _AnswerFeedback feedback;
+
+  @override
+  Widget build(BuildContext context) {
+    final correct = feedback == _AnswerFeedback.correct;
+    return Positioned.fill(
+      child: ColoredBox(
+        color: const Color(0xE8000000),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                correct ? Icons.circle_outlined : Icons.close_rounded,
+                size: 104,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                correct ? '正解！' : '不正解',
+                style: const TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (!correct) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'ヒントを確認して、もう一度挑戦しましょう',
+                  style: TextStyle(color: Color(0xFFCCCCCC)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

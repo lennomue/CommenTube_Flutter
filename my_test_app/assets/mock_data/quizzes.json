@@ -1,147 +1,342 @@
 [
   {
     "video_id": "y2bVIBwpCTA",
-    "thumbnail_comment_id": "comment_jackson_01",
-    "music_genre": ["r_and_b_soul", "pop"],
-    "video_genre": "music_video",
-    "music_title": "I Want You Back",
-    "music_artists": ["The Jackson 5"],
-    "music_languages": ["english"],
-    "music_released_at": "1969-10-07T00:00:00Z",
-    "video_published_at": "2020-06-14T19:00:08Z",
-    "video_lyrics": [
-      "Oh, baby, give me one more chance",
-      "Won't you please let me back in your heart",
-      "But now since I see you in his arms"
+    "video_atmosphere_color": {"h": 352, "s": 0.32, "l": 0.54},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["r_and_b_soul", "pop", "decade_1960s"],
+    "video_genre": "live_performance_video",
+    "title": "I Want You Back",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "1969-10-07"},
+    "posted_at": "2020-06-14T19:00:08Z",
+    "music_lyrics": ["I want you back"],
+    "comments": [
+      {"comment_id": "comment_jackson_live_01", "commented_at": "2021-01-22T14:00:33Z", "content": "The energy of this young performance still reaches the audience."}
     ],
-    "video_comments": [
-      {
-        "comment_id": "comment_jackson_01",
-        "commented_at": "2021-01-22T14:00:33Z",
-        "content": "Imagine a 10 year old sounding better than most artists today."
-      },
-      {
-        "comment_id": "comment_jackson_02",
-        "commented_at": "2025-03-10T13:00:08Z",
-        "content": "This performance still feels full of joy after all these years."
-      }
+    "meta_data": {"keywords": ["Motown", "Jackson family", "live performance"], "related_works": []},
+    "embedding": null
+  },
+  {
+    "video_id": "UvynvnxZJ3Q",
+    "video_atmosphere_color": {"h": 26, "s": 0.61, "l": 0.44},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["r_and_b_soul", "pop", "decade_1960s"],
+    "video_genre": "lyric_video",
+    "title": "I Want You Back",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "1969-10-07"},
+    "posted_at": "2018-10-29T00:00:00Z",
+    "music_lyrics": ["I want you back"],
+    "comments": [
+      {"comment_id": "comment_jackson_audio_01", "commented_at": "2020-10-29T09:00:00Z", "content": "The studio recording makes every harmony easy to hear."}
     ],
+    "meta_data": {"keywords": ["Motown", "debut single", "studio recording"], "related_works": []},
     "embedding": null
   },
   {
     "video_id": "dQw4w9WgXcQ",
-    "thumbnail_comment_id": "comment_rick_01",
-    "music_genre": ["pop", "decade_1980s"],
+    "video_atmosphere_color": {"h": 210, "s": 0.44, "l": 0.41},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["pop", "decade_1980s"],
     "video_genre": "music_video",
-    "music_title": "Never Gonna Give You Up",
-    "music_artists": ["Rick Astley"],
-    "music_languages": ["english"],
-    "music_released_at": "1987-07-27T00:00:00Z",
-    "video_published_at": "2009-10-25T06:57:33Z",
-    "video_lyrics": [
-      "We're no strangers to love",
-      "You know the rules and so do I",
-      "Never gonna give you up"
+    "title": "Never Gonna Give You Up",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "1987-07-27"},
+    "posted_at": "2009-10-25T06:57:33Z",
+    "music_lyrics": ["Never gonna give you up"],
+    "comments": [
+      {"comment_id": "comment_rick_01", "commented_at": "2024-04-01T08:00:00Z", "content": "The internet found a way to keep this song alive forever."}
     ],
-    "video_comments": [
-      {
-        "comment_id": "comment_rick_01",
-        "commented_at": "2024-04-01T08:00:00Z",
-        "content": "The internet found a way to keep this song alive forever."
-      },
-      {
-        "comment_id": "comment_rick_02",
-        "commented_at": "2025-05-12T10:20:00Z",
-        "content": "I came for the joke and stayed because the song is genuinely good."
-      }
-    ],
+    "meta_data": {"keywords": ["Rickroll", "internet culture", "1980s"], "related_works": []},
     "embedding": null
   },
   {
     "video_id": "9bZkp7q19f0",
-    "thumbnail_comment_id": "comment_gangnam_01",
-    "music_genre": ["k_pop", "dance_electronic"],
+    "video_atmosphere_color": {"h": 197, "s": 0.73, "l": 0.48},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["k_pop", "dance_electronic", "decade_2010s"],
     "video_genre": "music_video",
-    "music_title": "GANGNAM STYLE",
-    "music_artists": ["PSY"],
-    "music_languages": ["korean"],
-    "music_released_at": "2012-07-15T00:00:00Z",
-    "video_published_at": "2012-07-15T07:46:32Z",
-    "video_lyrics": [
-      "Oppa Gangnam Style",
-      "A warm and human woman during the day",
-      "A classy girl who knows how to enjoy freedom"
+    "title": "GANGNAM STYLE",
+    "languages": ["korean"],
+    "music_released_at": {"precision": "day", "date": "2012-07-15"},
+    "posted_at": "2012-07-15T07:46:32Z",
+    "music_lyrics": ["Oppa Gangnam Style"],
+    "comments": [
+      {"comment_id": "comment_gangnam_01", "commented_at": "2022-07-15T07:46:32Z", "content": "The choreography is recognizable almost anywhere in the world."}
     ],
-    "video_comments": [
-      {
-        "comment_id": "comment_gangnam_01",
-        "commented_at": "2022-07-15T07:46:32Z",
-        "content": "A whole decade later and the choreography is still instantly recognizable."
-      },
-      {
-        "comment_id": "comment_gangnam_02",
-        "commented_at": "2025-01-03T12:10:00Z",
-        "content": "This video changed what a worldwide internet hit could look like."
-      }
+    "meta_data": {"keywords": ["viral dance", "Seoul", "global hit"], "related_works": []},
+    "embedding": null
+  },
+  {
+    "video_id": "ASO_zypdnsQ",
+    "video_atmosphere_color": {"h": 8, "s": 0.76, "l": 0.48},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["k_pop", "dance_electronic", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "GENTLEMAN",
+    "languages": ["korean", "english"],
+    "music_released_at": {"precision": "day", "date": "2013-04-12"},
+    "posted_at": "2013-04-13T00:00:00Z",
+    "music_lyrics": ["I'm a mother father gentleman"],
+    "comments": [
+      {"comment_id": "comment_gentleman_01", "commented_at": "2023-04-13T00:00:00Z", "content": "The follow-up dance has its own playful personality."}
     ],
+    "meta_data": {"keywords": ["viral dance", "K-pop", "comedy"], "related_works": []},
     "embedding": null
   },
   {
     "video_id": "kJQP7kiw5Fk",
-    "thumbnail_comment_id": "comment_despacito_01",
-    "music_genre": ["latin", "pop"],
+    "video_atmosphere_color": {"h": 22, "s": 0.67, "l": 0.49},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["latin", "pop", "decade_2010s"],
     "video_genre": "music_video",
-    "music_title": "Despacito",
-    "music_artists": ["Luis Fonsi", "Daddy Yankee"],
-    "music_languages": ["spanish"],
-    "music_released_at": "2017-01-12T00:00:00Z",
-    "video_published_at": "2017-01-13T05:00:02Z",
-    "video_lyrics": [
-      "Despacito",
-      "Quiero respirar tu cuello despacito",
-      "Deja que te diga cosas al oído"
+    "title": "Despacito",
+    "languages": ["spanish"],
+    "music_released_at": {"precision": "day", "date": "2017-01-12"},
+    "posted_at": "2017-01-13T05:00:02Z",
+    "music_lyrics": ["Despacito"],
+    "comments": [
+      {"comment_id": "comment_despacito_01", "commented_at": "2023-01-13T05:00:02Z", "content": "The rhythm makes the location feel like one long summer evening."}
     ],
-    "video_comments": [
-      {
-        "comment_id": "comment_despacito_01",
-        "commented_at": "2023-01-13T05:00:02Z",
-        "content": "You do not need to speak the language to remember this melody."
-      },
-      {
-        "comment_id": "comment_despacito_02",
-        "commented_at": "2025-02-18T18:25:00Z",
-        "content": "The rhythm still turns any room into a summer party."
-      }
-    ],
+    "meta_data": {"keywords": ["Puerto Rico", "reggaeton", "global hit"], "related_works": []},
     "embedding": null
   },
   {
     "video_id": "JGwWNGJdvx8",
-    "thumbnail_comment_id": "comment_shape_01",
-    "music_genre": ["pop"],
+    "video_atmosphere_color": {"h": 187, "s": 0.45, "l": 0.39},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["pop", "decade_2010s"],
     "video_genre": "music_video",
-    "music_title": "Shape of You",
-    "music_artists": ["Ed Sheeran"],
-    "music_languages": ["english"],
-    "music_released_at": "2017-01-06T00:00:00Z",
-    "video_published_at": "2017-01-30T10:57:50Z",
-    "video_lyrics": [
-      "The club isn't the best place to find a lover",
-      "I'm in love with the shape of you",
-      "We push and pull like a magnet do"
+    "title": "Shape of You",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "2017-01-06"},
+    "posted_at": "2017-01-30T10:57:50Z",
+    "music_lyrics": ["I'm in love with your shape"],
+    "comments": [
+      {"comment_id": "comment_shape_01", "commented_at": "2022-01-30T10:57:50Z", "content": "The percussion makes the opening recognizable within seconds."}
     ],
-    "video_comments": [
-      {
-        "comment_id": "comment_shape_01",
-        "commented_at": "2022-01-30T10:57:50Z",
-        "content": "The percussion makes the opening recognizable in only a few seconds."
-      },
-      {
-        "comment_id": "comment_shape_02",
-        "commented_at": "2025-06-21T09:45:00Z",
-        "content": "This song was everywhere, but the video tells its own small story."
-      }
+    "meta_data": {"keywords": ["boxing", "dancehall influence", "2017"], "related_works": []},
+    "embedding": null
+  },
+  {
+    "video_id": "2Vv-BfVoq4g",
+    "video_atmosphere_color": {"h": 214, "s": 0.37, "l": 0.46},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["pop", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "Perfect",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "2017-09-26"},
+    "posted_at": "2017-11-09T00:00:00Z",
+    "music_lyrics": ["I found a love"],
+    "comments": [
+      {"comment_id": "comment_perfect_01", "commented_at": "2021-11-09T00:00:00Z", "content": "The snowy setting gives the ballad a cinematic feeling."}
     ],
+    "meta_data": {"keywords": ["ballad", "snow", "romance"], "related_works": []},
+    "embedding": null
+  },
+  {
+    "video_id": "dkcdSj4qBWU",
+    "video_atmosphere_color": {"h": 281, "s": 0.34, "l": 0.43},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["rock", "pop", "decade_1980s"],
+    "video_genre": "music_video",
+    "title": "There Must Be More to Life Than This",
+    "languages": ["english"],
+    "music_released_at": {"precision": "year", "date": "2014-01-01"},
+    "posted_at": "2016-02-26T00:00:00Z",
+    "music_lyrics": ["There must be more to life"],
+    "comments": [
+      {"comment_id": "comment_more_life_01", "commented_at": "2020-02-26T00:00:00Z", "content": "Two unmistakable voices make this collaboration feel historic."}
+    ],
+    "meta_data": {"keywords": ["duet", "Queen Forever", "posthumous release"], "related_works": ["Queen Forever"]},
+    "embedding": null
+  },
+  {
+    "video_id": "sOnqjkJTMaA",
+    "video_atmosphere_color": {"h": 4, "s": 0.72, "l": 0.31},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["pop", "r_and_b_soul", "decade_1980s"],
+    "video_genre": "music_video",
+    "title": "Thriller",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "1983-11-11"},
+    "posted_at": "2009-10-03T00:00:00Z",
+    "music_lyrics": ["It's close to midnight"],
+    "comments": [
+      {"comment_id": "comment_thriller_01", "commented_at": "2022-10-31T00:00:00Z", "content": "This short film still defines the atmosphere of Halloween."}
+    ],
+    "meta_data": {"keywords": ["horror", "zombies", "short film"], "related_works": ["Thriller short film"]},
+    "embedding": null
+  },
+  {
+    "video_id": "fJ9rUzIMcZQ",
+    "video_atmosphere_color": {"h": 31, "s": 0.28, "l": 0.42},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["rock", "decade_1970s"],
+    "video_genre": "music_video",
+    "title": "Bohemian Rhapsody",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "1975-10-31"},
+    "posted_at": "2008-08-01T00:00:00Z",
+    "music_lyrics": ["Is this the real life?"],
+    "comments": [
+      {"comment_id": "comment_bohemian_01", "commented_at": "2021-08-01T00:00:00Z", "content": "The arrangement keeps changing while remaining instantly familiar."}
+    ],
+    "meta_data": {"keywords": ["opera", "progressive rock", "Queen"], "related_works": ["A Night at the Opera"]},
+    "embedding": null
+  },
+  {
+    "video_id": "HgzGwKwLmgM",
+    "video_atmosphere_color": {"h": 42, "s": 0.65, "l": 0.47},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["rock", "decade_1970s"],
+    "video_genre": "music_video",
+    "title": "Don't Stop Me Now",
+    "languages": ["english"],
+    "music_released_at": {"precision": "year", "date": "1978-01-01"},
+    "posted_at": "2008-08-01T00:00:00Z",
+    "music_lyrics": ["Don't stop me now"],
+    "comments": [
+      {"comment_id": "comment_dont_stop_01", "commented_at": "2021-02-01T00:00:00Z", "content": "The momentum never seems to slow down once the song begins."}
+    ],
+    "meta_data": {"keywords": ["piano rock", "Queen", "1970s"], "related_works": ["Jazz"]},
+    "embedding": null
+  },
+  {
+    "video_id": "q0T7Ex7MkLM",
+    "video_atmosphere_color": {"h": 347, "s": 0.62, "l": 0.58},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["j_pop", "vocaloid_utaite", "anime_soundtrack", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "東京サマーセッション",
+    "languages": ["japanese"],
+    "music_released_at": {"precision": "day", "date": "2015-07-24"},
+    "posted_at": "2015-07-24T00:00:00Z",
+    "music_lyrics": ["やあ、こんにちは"],
+    "comments": [
+      {"comment_id": "comment_tokyo_summer_01", "commented_at": "2020-07-24T00:00:00Z", "content": "A summer festival and an awkward conversation shape the whole scene."}
+    ],
+    "meta_data": {"keywords": ["夏祭り", "告白実行委員会", "Vocaloid"], "related_works": ["告白実行委員会"]},
+    "embedding": null
+  },
+  {
+    "video_id": "FwTLkGgRXJQ",
+    "video_atmosphere_color": {"h": 323, "s": 0.51, "l": 0.48},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["j_pop", "vocaloid_utaite", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "東京サマーセッション",
+    "languages": ["japanese"],
+    "music_released_at": {"precision": "day", "date": "2016-09-19"},
+    "posted_at": "2016-09-19T00:00:00Z",
+    "music_lyrics": ["やあ、こんにちは"],
+    "comments": [
+      {"comment_id": "comment_tokyo_cover_01", "commented_at": "2021-09-19T00:00:00Z", "content": "The playful spoken exchange makes this cover easy to distinguish."}
+    ],
+    "meta_data": {"keywords": ["歌ってみた", "夏祭り", "duet cover"], "related_works": ["告白実行委員会"]},
+    "embedding": null
+  },
+  {
+    "video_id": "jePk5vWvyFk",
+    "video_atmosphere_color": {"h": 202, "s": 0.48, "l": 0.57},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["j_pop", "anime_soundtrack", "seasonal_winter", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "東京ウインターセッション",
+    "languages": ["japanese"],
+    "music_released_at": {"precision": "day", "date": "2017-12-06"},
+    "posted_at": "2017-12-04T00:00:00Z",
+    "music_lyrics": ["ねぇ、こっちおいでよ"],
+    "comments": [
+      {"comment_id": "comment_tokyo_winter_01", "commented_at": "2022-12-04T00:00:00Z", "content": "The returning characters turn a seasonal song into a continuing story."}
+    ],
+    "meta_data": {"keywords": ["冬", "告白実行委員会", "character song"], "related_works": ["告白実行委員会", "いつだって僕らの恋は10センチだった。"]},
+    "embedding": null
+  },
+  {
+    "video_id": "9Upo1ELtvhw",
+    "video_atmosphere_color": {"h": 334, "s": 0.71, "l": 0.61},
+    "thumbnail_hint": {"hint_type": "lyric"},
+    "content_genres": ["j_pop", "anime_soundtrack", "decade_2020s"],
+    "video_genre": "music_video",
+    "title": "愛♡スクリ～ム！",
+    "languages": ["japanese"],
+    "music_released_at": {"precision": "day", "date": "2025-01-22"},
+    "posted_at": "2024-10-17T00:00:00Z",
+    "music_lyrics": ["チョコミントよりもあなた"],
+    "comments": [
+      {"comment_id": "comment_aiscream_01", "commented_at": "2025-03-01T00:00:00Z", "content": "Three character voices turned one exchange into a memorable meme."}
+    ],
+    "meta_data": {"keywords": ["Love Live", "AiScReam", "internet meme"], "related_works": ["ラブライブ！シリーズ"]},
+    "embedding": null
+  },
+  {
+    "video_id": "AbBaG-Bq6_E",
+    "video_atmosphere_color": {"h": 46, "s": 0.58, "l": 0.53},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["j_pop", "traditional_japanese_pop", "anime_soundtrack", "decade_2020s"],
+    "video_genre": "fan_made_video",
+    "title": "ルビィちゃん 雅楽",
+    "languages": ["japanese"],
+    "music_released_at": {"precision": "day", "date": "2025-12-22"},
+    "posted_at": "2025-12-22T00:18:04Z",
+    "music_lyrics": ["ルビィちゃん、はーい"],
+    "comments": [
+      {"comment_id": "comment_ruby_gagaku_01", "commented_at": "2025-12-23T00:00:00Z", "content": "The contrast between a modern call and gagaku creates the entire joke."}
+    ],
+    "meta_data": {"keywords": ["音MAD", "雅楽", "愛♡スクリ～ム！", "越天楽"], "related_works": ["ラブライブ！シリーズ", "越天楽"]},
+    "embedding": null
+  },
+  {
+    "video_id": "DyDfgMOUjCI",
+    "video_atmosphere_color": {"h": 53, "s": 0.78, "l": 0.57},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["pop", "indie_alternative", "decade_2010s"],
+    "video_genre": "music_video",
+    "title": "bad guy",
+    "languages": ["english"],
+    "music_released_at": {"precision": "day", "date": "2019-03-29"},
+    "posted_at": "2019-03-29T00:00:00Z",
+    "music_lyrics": ["I'm the bad guy"],
+    "comments": [
+      {"comment_id": "comment_bad_guy_01", "commented_at": "2021-03-29T00:00:00Z", "content": "The bright colors and dry delivery make an unusual combination."}
+    ],
+    "meta_data": {"keywords": ["minimal pop", "yellow room", "debut album"], "related_works": ["When We All Fall Asleep, Where Do We Go?"]},
+    "embedding": null
+  },
+  {
+    "video_id": "jNQXAC9IVRw",
+    "video_atmosphere_color": {"h": 112, "s": 0.26, "l": 0.46},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["non_music"],
+    "video_genre": "non_music",
+    "title": "Me at the zoo",
+    "languages": ["english"],
+    "music_released_at": null,
+    "posted_at": "2005-04-23T20:31:52Z",
+    "music_lyrics": null,
+    "comments": [
+      {"comment_id": "comment_zoo_01", "commented_at": "2020-04-23T00:00:00Z", "content": "A very ordinary zoo clip became a piece of internet history."}
+    ],
+    "meta_data": {"keywords": ["first YouTube video", "zoo", "internet history"], "related_works": []},
+    "embedding": null
+  },
+  {
+    "video_id": "J---aiyznGQ",
+    "video_atmosphere_color": {"h": 32, "s": 0.31, "l": 0.42},
+    "thumbnail_hint": {"hint_type": "comment"},
+    "content_genres": ["non_music"],
+    "video_genre": "non_music",
+    "title": "Keyboard Cat",
+    "languages": [],
+    "music_released_at": null,
+    "posted_at": "2007-06-07T00:00:00Z",
+    "music_lyrics": null,
+    "comments": [
+      {"comment_id": "comment_keyboard_cat_01", "commented_at": "2020-06-07T00:00:00Z", "content": "A simple keyboard performance became a universal punchline."}
+    ],
+    "meta_data": {"keywords": ["cat", "internet meme", "keyboard"], "related_works": []},
     "embedding": null
   }
 ]

@@ -87,3 +87,18 @@
 - `plan.md`のフェーズ6へ、Game・Result・Libraryの具体的なデザイン改善要件を追記
 - 全12テスト、静的解析、iOS向け署名なしデバッグビルドの成功を確認
 - iPhone実機で4種類のお気に入り、Libraryの各タブ、再起動後の保持、楽曲詳細、共有、YouTubeリンクが動作することを確認
+
+## 2026-09-20: フェーズ5.1・5.2 画面階層とデータ設計の整理
+
+- Home・Libraryの共通フッターを小型化し、選択中のアイコンだけを白く表示する構成へ変更
+- HomeまたはLibraryの上にArtistを重ね、Game・Resultを縮小後も丸い復帰オブジェクトから再開できる画面階層を実装
+- ResultとLibraryの楽曲詳細を共通部品化し、アーティスト導線・お気に入り・共有操作を共通化
+- Artist画面にクイズ一覧、楽曲検索、再生数・新しい順・古い順の並び替え、全問連続プレイを追加
+- 連続プレイの最終問を`FINISH`にし、開始元のArtist画面へ戻る導線を追加
+- クイズデータを`quizzes`・`artists`・`artist_videos_junction`・`videos_junction`の正規化したJSONへ分離
+- `thumbnail_hint`は種類だけを保存し、コメントまたは歌詞の先頭要素から本文を解決する構成へ変更
+- 部分日付、複数アーティスト、別名、`meta_data`、関連動画の無方向関係をFlutterモデルとRepositoryに追加
+- `same_music`・`seriese`・`cover`・`part_of`の関連、コラボ曲、別動画、MAD、カバー、同一アーティストの複数曲を含む20問のデータを追加
+- 非音楽動画も内容に応じて英語・日本語等を持てるよう、動画ジャンルと言語を独立した属性として整理
+- Supabase・Drift・Repository/Riverpod・画面Stateが管理するデータと寿命を`spec.md`に明記
+- 静的解析と全19テストの成功、およびフェーズ5.1の画面挙動をiPhone実機で確認

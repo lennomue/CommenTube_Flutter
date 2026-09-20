@@ -41,5 +41,31 @@ void main() {
       youtubeWatchUri('y2bVIBwpCTA').toString(),
       'https://www.youtube.com/watch?v=y2bVIBwpCTA',
     );
+
+    expect(
+      musicServiceSearchUri(
+        MusicService.youtubeMusic,
+        'Never Gonna Give You Up Rick Astley',
+      ).host,
+      'music.youtube.com',
+    );
+    expect(
+      musicServiceSearchUri(
+        MusicService.spotify,
+        'Never Gonna Give You Up Rick Astley',
+      ).pathSegments.last,
+      'Never Gonna Give You Up Rick Astley',
+    );
+    expect(
+      musicServiceSearchUri(MusicService.amazonMusic, 'I Want You Back').host,
+      'music.amazon.com',
+    );
+    expect(
+      musicServiceSearchUri(
+        MusicService.appleMusic,
+        'I Want You Back',
+      ).queryParameters['term'],
+      'I Want You Back',
+    );
   });
 }

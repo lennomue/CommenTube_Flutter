@@ -1,3 +1,5 @@
+import '../models/quiz.dart';
+
 String formatCompactCount(int count) {
   if (count >= 100000000) {
     return '${_compactDecimal(count / 100000000)}億';
@@ -23,7 +25,22 @@ String formatDate(DateTime date) {
   return '${date.year}年${date.month}月${date.day}日';
 }
 
+String formatPartialDate(PartialDate? value) {
+  if (value == null) {
+    return '不明';
+  }
+  return switch (value.precision) {
+    DatePrecision.year => '${value.date.year}年',
+    DatePrecision.month => '${value.date.year}年${value.date.month}月',
+    DatePrecision.day => formatDate(value.date),
+  };
+}
+
 String genreLabel(String genre) {
+  final decade = RegExp(r'^decade_(\d{4}s)$').firstMatch(genre);
+  if (decade != null) {
+    return decade.group(1)!;
+  }
   return switch (genre) {
     'j_pop' => 'J-Pop',
     'k_pop' => 'K-Pop',
@@ -33,6 +50,9 @@ String genreLabel(String genre) {
     'anime_soundtrack' => 'アニメ・サントラ',
     'hiphop' => 'ヒップホップ',
     'latin' => 'ラテン',
+    'dance_electronic' => 'ダンス・エレクトロニック',
+    'vocaloid_utaite' => 'ボカロ・歌い手',
+    'non_music' => 'その他',
     _ => genre,
   };
 }

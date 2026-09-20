@@ -1,0 +1,6 @@
+[
+  {"video_id_a": "UvynvnxZJ3Q", "video_id_b": "y2bVIBwpCTA", "relation_type": "same_music"},
+  {"video_id_a": "FwTLkGgRXJQ", "video_id_b": "q0T7Ex7MkLM", "relation_type": "cover"},
+  {"video_id_a": "jePk5vWvyFk", "video_id_b": "q0T7Ex7MkLM", "relation_type": "seriese"},
+  {"video_id_a": "9Upo1ELtvhw", "video_id_b": "AbBaG-Bq6_E", "relation_type": "part_of"}
+]

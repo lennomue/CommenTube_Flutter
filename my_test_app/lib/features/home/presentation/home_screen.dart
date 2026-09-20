@@ -5,6 +5,7 @@ import '../../../core/models/quiz.dart';
 import '../../../core/models/quiz_filter.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/state/quiz_experience_controller.dart';
 import '../../../core/utils/display_formatters.dart';
 import 'home_filter_bar.dart';
 
@@ -35,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: quizzes.when(
               data: (items) => items.isEmpty
                   ? _EmptyQuizFeed(onClear: () => _setFilter(QuizFilter.empty))
-                  : _QuizFeed(quizzes: items),
+                  : _QuizFeed(quizzes: items, onOpenQuiz: _openQuiz),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => _LoadError(
                 onRetry: () => ref.invalidate(filteredQuizzesProvider(_filter)),
@@ -49,6 +50,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _setFilter(QuizFilter filter) {
     setState(() => _filter = filter);
+  }
+
+  void _openQuiz(String videoId) {
+    ref.read(artistQuizSessionProvider.notifier).clear();
+    ref.read(minimizedQuizExperienceProvider.notifier).clear();
+    context.openGame(videoId);
   }
 
   Future<void> _openDetailedFilters() async {
@@ -74,11 +81,7 @@ class _HomeHeader extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(
-            Icons.play_circle_fill_rounded,
-            color: Color(0xFFFF858B),
-            size: 42,
-          ),
+          Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 42),
           SizedBox(width: 10),
           Expanded(
             child: FittedBox(
@@ -97,9 +100,10 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _QuizFeed extends StatelessWidget {
-  const _QuizFeed({required this.quizzes});
+  const _QuizFeed({required this.quizzes, required this.onOpenQuiz});
 
   final List<QuizWithLiveStats> quizzes;
+  final ValueChanged<String> onOpenQuiz;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +117,7 @@ class _QuizFeed extends StatelessWidget {
           key: ValueKey('quiz-card-${quiz.quiz.videoId}'),
           quiz: quiz,
           colorIndex: index,
-          onTap: () => context.openGame(quiz.quiz.videoId),
+          onTap: () => onOpenQuiz(quiz.quiz.videoId),
         );
       },
     );
@@ -143,7 +147,7 @@ class _QuizPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _accentColors[colorIndex % _accentColors.length];
-    final comment = quiz.representativeComment?.comment.content ?? 'ヒントはありません';
+    final hint = quiz.quiz.thumbnailHint;
 
     return Material(
       color: const Color(0xFF141414),
@@ -177,14 +181,16 @@ class _QuizPreviewCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.chat_bubble_outline_rounded,
+                        Icon(
+                          hint?.type == ThumbnailHintType.lyric
+                              ? Icons.music_note_rounded
+                              : Icons.chat_bubble_outline_rounded,
                           color: Colors.black,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            comment,
+                            hint?.content ?? 'ヒントはありません',
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -228,7 +234,7 @@ class _QuizPreviewCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    formatRelativeDate(quiz.quiz.videoPublishedAt),
+                    formatRelativeDate(quiz.quiz.postedAt),
                     style: const TextStyle(
                       color: Color(0xFFD0D0D0),
                       fontWeight: FontWeight.w600,

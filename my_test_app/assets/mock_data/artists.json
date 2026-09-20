@@ -1,0 +1,21 @@
+[
+  {"artist_id": "00000000-0000-4000-8000-000000000001", "name": "The Jackson 5", "sub_names": ["Jackson 5", "ジャクソン5"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000002", "name": "Michael Jackson", "sub_names": ["マイケル・ジャクソン", "MJ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000003", "name": "Rick Astley", "sub_names": ["リック・アストリー"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000004", "name": "PSY", "sub_names": ["サイ", "싸이"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000005", "name": "Luis Fonsi", "sub_names": ["ルイス・フォンシ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000006", "name": "Daddy Yankee", "sub_names": ["ダディー・ヤンキー"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000007", "name": "Ed Sheeran", "sub_names": ["エド・シーラン"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000008", "name": "Freddie Mercury", "sub_names": ["フレディ・マーキュリー"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000009", "name": "Queen", "sub_names": ["クイーン"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000010", "name": "HoneyWorks", "sub_names": ["ハニーワークス", "ハニワ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000011", "name": "GUMI", "sub_names": ["Megpoid", "メグッポイド"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000012", "name": "flower", "sub_names": ["v flower", "フラワ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000013", "name": "天月-あまつき-", "sub_names": ["天月", "Amatsuki"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000014", "name": "96猫", "sub_names": ["KuroNeko", "くろねこ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000015", "name": "AiScReam", "sub_names": ["アイスクリーム"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000016", "name": "皿", "sub_names": ["自動販売機の中の人", "身柄確保"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000017", "name": "Billie Eilish", "sub_names": ["ビリー・アイリッシュ"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000018", "name": "jawed", "sub_names": ["Jawed Karim", "ジョード・カリム"]},
+  {"artist_id": "00000000-0000-4000-8000-000000000019", "name": "Charlie Schmidt", "sub_names": ["Keyboard Cat", "Fatso"]}
+]
