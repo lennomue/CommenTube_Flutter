@@ -103,6 +103,7 @@ class AppNavigationBar extends StatelessWidget {
               Expanded(
                 child: _NavigationIcon(
                   tooltip: 'ホーム',
+                  label: 'HOME',
                   selected: selectedIndex == 0,
                   icon: Icons.home_outlined,
                   selectedIcon: Icons.home_rounded,
@@ -112,6 +113,7 @@ class AppNavigationBar extends StatelessWidget {
               Expanded(
                 child: _NavigationIcon(
                   tooltip: 'ライブラリ',
+                  label: 'LIBRARY',
                   selected: selectedIndex == 1,
                   icon: Icons.video_library_outlined,
                   selectedIcon: Icons.video_library_rounded,
@@ -129,6 +131,7 @@ class AppNavigationBar extends StatelessWidget {
 class _NavigationIcon extends StatelessWidget {
   const _NavigationIcon({
     required this.tooltip,
+    required this.label,
     required this.selected,
     required this.icon,
     required this.selectedIcon,
@@ -136,6 +139,7 @@ class _NavigationIcon extends StatelessWidget {
   });
 
   final String tooltip;
+  final String label;
   final bool selected;
   final IconData icon;
   final IconData selectedIcon;
@@ -147,15 +151,31 @@ class _NavigationIcon extends StatelessWidget {
       selected: selected,
       button: true,
       label: tooltip,
-      child: IconButton(
-        tooltip: tooltip,
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        onPressed: onPressed,
-        icon: Icon(
-          selected ? selectedIcon : icon,
-          color: selected ? Colors.white : const Color(0xFF8B8B8B),
-          size: 25,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onPressed,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                selected ? selectedIcon : icon,
+                color: selected ? Colors.white : const Color(0xFF8B8B8B),
+                size: 21,
+              ),
+              const SizedBox(height: 1),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : const Color(0xFF8B8B8B),
+                  fontSize: 8,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

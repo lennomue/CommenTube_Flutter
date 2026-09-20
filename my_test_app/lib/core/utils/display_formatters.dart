@@ -21,6 +21,20 @@ String formatRelativeDate(DateTime date, {DateTime? now}) {
   return '${days ~/ 365}年前';
 }
 
+String formatRelativeTime(DateTime date, {DateTime? now}) {
+  final difference = (now ?? DateTime.now()).difference(date);
+  if (difference.isNegative || difference.inMinutes < 1) {
+    return 'たった今';
+  }
+  if (difference.inHours < 1) {
+    return '${difference.inMinutes}分前';
+  }
+  if (difference.inDays < 1) {
+    return '${difference.inHours}時間前';
+  }
+  return formatRelativeDate(date, now: now);
+}
+
 String formatDate(DateTime date) {
   return '${date.year}年${date.month}月${date.day}日';
 }

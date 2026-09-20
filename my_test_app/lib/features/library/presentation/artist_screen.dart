@@ -10,7 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/state/quiz_experience_controller.dart';
 import '../../../core/utils/display_formatters.dart';
 
-enum _SongOrder { views, newest }
+enum _SongOrder { views, newest, oldest }
 
 class ArtistScreen extends ConsumerStatefulWidget {
   const ArtistScreen({super.key, required this.artist});
@@ -150,6 +150,7 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
           left.videoStats.viewCount,
         ),
         _SongOrder.newest => right.quiz.postedAt.compareTo(left.quiz.postedAt),
+        _SongOrder.oldest => left.quiz.postedAt.compareTo(right.quiz.postedAt),
       };
     });
     return result;
@@ -282,6 +283,10 @@ class _ArtistSongList extends StatelessWidget {
                     value: _SongOrder.newest,
                     child: Text('新しい順'),
                   ),
+                  DropdownMenuItem(
+                    value: _SongOrder.oldest,
+                    child: Text('古い順'),
+                  ),
                 ],
               ),
             ],
@@ -303,7 +308,7 @@ class _ArtistSongList extends StatelessWidget {
                       title: Text(quiz.quiz.title),
                       subtitle: Text(
                         '${formatCompactCount(quiz.videoStats.viewCount)}回視聴 ・ '
-                        '${formatDate(quiz.quiz.postedAt)}',
+                        '${formatRelativeDate(quiz.quiz.postedAt)}',
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                     );

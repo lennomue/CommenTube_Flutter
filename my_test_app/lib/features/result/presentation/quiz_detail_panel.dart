@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/models/favorite.dart';
 import '../../../core/models/quiz.dart';
 import '../../../core/repositories/favorite_providers.dart';
+import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/utils/display_formatters.dart';
 import '../../../core/utils/youtube_link.dart';
 
@@ -14,19 +15,18 @@ class QuizDetailPanel extends ConsumerWidget {
     required this.quiz,
     required this.leading,
     this.bottomPadding = 24,
-    this.onMinimize,
     this.onArtistOpen,
   });
 
   final QuizWithLiveStats quiz;
   final Widget leading;
   final double bottomPadding;
-  final VoidCallback? onMinimize;
   final ValueChanged<String>? onArtistOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = quiz.quiz;
+    final allQuizzes = ref.watch(quizzesProvider).value ?? const [];
     final favoriteIds =
         ref
             .watch(favoritesProvider)
@@ -40,60 +40,50 @@ class QuizDetailPanel extends ConsumerWidget {
     );
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
+          Padding(
             key: const ValueKey('quiz-detail-minimize-area'),
-            behavior: HitTestBehavior.opaque,
-            onVerticalDragEnd: onMinimize == null
-                ? null
-                : (details) {
-                    if ((details.primaryVelocity ?? 0) > 300) {
-                      onMinimize!();
-                    }
-                  },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  leading,
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 7),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            data.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 25,
-                              height: 1.08,
-                              fontWeight: FontWeight.w900,
-                            ),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                leading,
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 7),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 25,
+                            height: 1.08,
+                            fontWeight: FontWeight.w900,
                           ),
-                          const SizedBox(height: 2),
-                          _ArtistLinks(
-                            artists: data.artistNames,
-                            onArtistOpen: onArtistOpen,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 2),
+                        _ArtistLinks(
+                          artists: data.artistNames,
+                          onArtistOpen: onArtistOpen,
+                        ),
+                      ],
                     ),
                   ),
-                  _FavoriteIconButton(
-                    key: ValueKey('favorite-song-${data.videoId}'),
-                    tooltip: '楽曲をお気に入り',
-                    selected: favoriteIds.contains(songFavorite.id),
-                    onPressed: () => _toggleFavorite(ref, songFavorite),
-                  ),
-                ],
-              ),
+                ),
+                _FavoriteIconButton(
+                  key: ValueKey('favorite-song-${data.videoId}'),
+                  tooltip: '楽曲をお気に入り',
+                  selected: favoriteIds.contains(songFavorite.id),
+                  onPressed: () => _toggleFavorite(ref, songFavorite),
+                ),
+              ],
             ),
           ),
           SizedBox(
@@ -132,6 +122,7 @@ class QuizDetailPanel extends ConsumerWidget {
               Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'コメント'),
               Tab(icon: Icon(Icons.music_note_rounded), text: '歌詞'),
               Tab(icon: Icon(Icons.info_outline_rounded), text: '楽曲情報'),
+              Tab(icon: Icon(Icons.link_rounded), text: '関連'),
             ],
           ),
           Expanded(
@@ -197,6 +188,11 @@ class QuizDetailPanel extends ConsumerWidget {
                     ),
                   ],
                 ),
+                _RelatedVideosTab(
+                  relations: data.relatedVideos,
+                  allQuizzes: allQuizzes,
+                  bottomPadding: bottomPadding,
+                ),
               ],
             ),
           ),
@@ -207,6 +203,111 @@ class QuizDetailPanel extends ConsumerWidget {
 
   Future<void> _toggleFavorite(WidgetRef ref, SavedFavorite favorite) {
     return ref.read(favoriteRepositoryProvider).toggleFavorite(favorite);
+  }
+}
+
+class _RelatedVideosTab extends StatelessWidget {
+  const _RelatedVideosTab({
+    required this.relations,
+    required this.allQuizzes,
+    required this.bottomPadding,
+  });
+
+  static const _relationOrder = ['same_music', 'seriese', 'cover', 'part_of'];
+
+  final List<RelatedVideo> relations;
+  final List<QuizWithLiveStats> allQuizzes;
+  final double bottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final quizzesById = {
+      for (final quiz in allQuizzes) quiz.quiz.videoId: quiz,
+    };
+    final grouped = <String, List<QuizWithLiveStats>>{};
+    for (final relation in relations) {
+      final relatedQuiz = quizzesById[relation.videoId];
+      if (relatedQuiz != null) {
+        grouped.putIfAbsent(relation.relationType, () => []).add(relatedQuiz);
+      }
+    }
+    final visibleTypes = _relationOrder
+        .where((type) => grouped[type]?.isNotEmpty ?? false)
+        .toList(growable: false);
+    if (visibleTypes.isEmpty) {
+      return const Center(
+        child: Text('関連動画はありません', style: TextStyle(color: Color(0xFFAAAAAA))),
+      );
+    }
+    return ListView(
+      key: const ValueKey('related-videos-list'),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+      children: [
+        for (final type in visibleTypes) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+            child: Text(
+              _relationLabel(type),
+              style: const TextStyle(
+                color: Color(0xFFBDBDBD),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          for (final related in grouped[type]!)
+            _RelatedVideoCard(quiz: related),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  String _relationLabel(String type) {
+    return switch (type) {
+      'same_music' => '同じ曲',
+      'seriese' => 'シリーズ',
+      'cover' => 'カバー',
+      'part_of' => 'MAD・構成元',
+      _ => type,
+    };
+  }
+}
+
+class _RelatedVideoCard extends StatelessWidget {
+  const _RelatedVideoCard({required this.quiz});
+
+  final QuizWithLiveStats quiz;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: ValueKey('related-video-${quiz.quiz.videoId}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1C),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF303030)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            quiz.quiz.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${formatCompactCount(quiz.videoStats.viewCount)}回視聴 ・ '
+            '${formatRelativeDate(quiz.quiz.postedAt)}',
+            style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -415,17 +415,241 @@ class FavoriteEntriesCompanion extends UpdateCompanion<FavoriteEntry> {
   }
 }
 
+class $QuizHistoryEntriesTable extends QuizHistoryEntries
+    with TableInfo<$QuizHistoryEntriesTable, QuizHistoryEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuizHistoryEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _videoIdMeta = const VerificationMeta(
+    'videoId',
+  );
+  @override
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playedAtMeta = const VerificationMeta(
+    'playedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> playedAt = GeneratedColumn<DateTime>(
+    'played_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [videoId, playedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quiz_history_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<QuizHistoryEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('video_id')) {
+      context.handle(
+        _videoIdMeta,
+        videoId.isAcceptableOrUnknown(data['video_id']!, _videoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoIdMeta);
+    }
+    if (data.containsKey('played_at')) {
+      context.handle(
+        _playedAtMeta,
+        playedAt.isAcceptableOrUnknown(data['played_at']!, _playedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_playedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {videoId};
+  @override
+  QuizHistoryEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QuizHistoryEntry(
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      playedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}played_at'],
+      )!,
+    );
+  }
+
+  @override
+  $QuizHistoryEntriesTable createAlias(String alias) {
+    return $QuizHistoryEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class QuizHistoryEntry extends DataClass
+    implements Insertable<QuizHistoryEntry> {
+  final String videoId;
+  final DateTime playedAt;
+  const QuizHistoryEntry({required this.videoId, required this.playedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['video_id'] = Variable<String>(videoId);
+    map['played_at'] = Variable<DateTime>(playedAt);
+    return map;
+  }
+
+  QuizHistoryEntriesCompanion toCompanion(bool nullToAbsent) {
+    return QuizHistoryEntriesCompanion(
+      videoId: Value(videoId),
+      playedAt: Value(playedAt),
+    );
+  }
+
+  factory QuizHistoryEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QuizHistoryEntry(
+      videoId: serializer.fromJson<String>(json['videoId']),
+      playedAt: serializer.fromJson<DateTime>(json['playedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'videoId': serializer.toJson<String>(videoId),
+      'playedAt': serializer.toJson<DateTime>(playedAt),
+    };
+  }
+
+  QuizHistoryEntry copyWith({String? videoId, DateTime? playedAt}) =>
+      QuizHistoryEntry(
+        videoId: videoId ?? this.videoId,
+        playedAt: playedAt ?? this.playedAt,
+      );
+  QuizHistoryEntry copyWithCompanion(QuizHistoryEntriesCompanion data) {
+    return QuizHistoryEntry(
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuizHistoryEntry(')
+          ..write('videoId: $videoId, ')
+          ..write('playedAt: $playedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(videoId, playedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QuizHistoryEntry &&
+          other.videoId == this.videoId &&
+          other.playedAt == this.playedAt);
+}
+
+class QuizHistoryEntriesCompanion extends UpdateCompanion<QuizHistoryEntry> {
+  final Value<String> videoId;
+  final Value<DateTime> playedAt;
+  final Value<int> rowid;
+  const QuizHistoryEntriesCompanion({
+    this.videoId = const Value.absent(),
+    this.playedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  QuizHistoryEntriesCompanion.insert({
+    required String videoId,
+    required DateTime playedAt,
+    this.rowid = const Value.absent(),
+  }) : videoId = Value(videoId),
+       playedAt = Value(playedAt);
+  static Insertable<QuizHistoryEntry> custom({
+    Expression<String>? videoId,
+    Expression<DateTime>? playedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (videoId != null) 'video_id': videoId,
+      if (playedAt != null) 'played_at': playedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  QuizHistoryEntriesCompanion copyWith({
+    Value<String>? videoId,
+    Value<DateTime>? playedAt,
+    Value<int>? rowid,
+  }) {
+    return QuizHistoryEntriesCompanion(
+      videoId: videoId ?? this.videoId,
+      playedAt: playedAt ?? this.playedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (playedAt.present) {
+      map['played_at'] = Variable<DateTime>(playedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuizHistoryEntriesCompanion(')
+          ..write('videoId: $videoId, ')
+          ..write('playedAt: $playedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $FavoriteEntriesTable favoriteEntries = $FavoriteEntriesTable(
     this,
   );
+  late final $QuizHistoryEntriesTable quizHistoryEntries =
+      $QuizHistoryEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [favoriteEntries];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    favoriteEntries,
+    quizHistoryEntries,
+  ];
 }
 
 typedef $$FavoriteEntriesTableCreateCompanionBuilder =
@@ -660,10 +884,179 @@ typedef $$FavoriteEntriesTableProcessedTableManager =
       FavoriteEntry,
       PrefetchHooks Function()
     >;
+typedef $$QuizHistoryEntriesTableCreateCompanionBuilder =
+    QuizHistoryEntriesCompanion Function({
+      required String videoId,
+      required DateTime playedAt,
+      Value<int> rowid,
+    });
+typedef $$QuizHistoryEntriesTableUpdateCompanionBuilder =
+    QuizHistoryEntriesCompanion Function({
+      Value<String> videoId,
+      Value<DateTime> playedAt,
+      Value<int> rowid,
+    });
+
+class $$QuizHistoryEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $QuizHistoryEntriesTable> {
+  $$QuizHistoryEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get playedAt => $composableBuilder(
+    column: $table.playedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$QuizHistoryEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $QuizHistoryEntriesTable> {
+  $$QuizHistoryEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get playedAt => $composableBuilder(
+    column: $table.playedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$QuizHistoryEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $QuizHistoryEntriesTable> {
+  $$QuizHistoryEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get videoId =>
+      $composableBuilder(column: $table.videoId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get playedAt =>
+      $composableBuilder(column: $table.playedAt, builder: (column) => column);
+}
+
+class $$QuizHistoryEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $QuizHistoryEntriesTable,
+          QuizHistoryEntry,
+          $$QuizHistoryEntriesTableFilterComposer,
+          $$QuizHistoryEntriesTableOrderingComposer,
+          $$QuizHistoryEntriesTableAnnotationComposer,
+          $$QuizHistoryEntriesTableCreateCompanionBuilder,
+          $$QuizHistoryEntriesTableUpdateCompanionBuilder,
+          (
+            QuizHistoryEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $QuizHistoryEntriesTable,
+              QuizHistoryEntry
+            >,
+          ),
+          QuizHistoryEntry,
+          PrefetchHooks Function()
+        > {
+  $$QuizHistoryEntriesTableTableManager(
+    _$AppDatabase db,
+    $QuizHistoryEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QuizHistoryEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QuizHistoryEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QuizHistoryEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> videoId = const Value.absent(),
+                Value<DateTime> playedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QuizHistoryEntriesCompanion(
+                videoId: videoId,
+                playedAt: playedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String videoId,
+                required DateTime playedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => QuizHistoryEntriesCompanion.insert(
+                videoId: videoId,
+                playedAt: playedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$QuizHistoryEntriesTable, QuizHistoryEntry>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $QuizHistoryEntriesTable,
+                    QuizHistoryEntry
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$QuizHistoryEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $QuizHistoryEntriesTable,
+      QuizHistoryEntry,
+      $$QuizHistoryEntriesTableFilterComposer,
+      $$QuizHistoryEntriesTableOrderingComposer,
+      $$QuizHistoryEntriesTableAnnotationComposer,
+      $$QuizHistoryEntriesTableCreateCompanionBuilder,
+      $$QuizHistoryEntriesTableUpdateCompanionBuilder,
+      (
+        QuizHistoryEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $QuizHistoryEntriesTable,
+          QuizHistoryEntry
+        >,
+      ),
+      QuizHistoryEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$FavoriteEntriesTableTableManager get favoriteEntries =>
       $$FavoriteEntriesTableTableManager(_db, _db.favoriteEntries);
+  $$QuizHistoryEntriesTableTableManager get quizHistoryEntries =>
+      $$QuizHistoryEntriesTableTableManager(_db, _db.quizHistoryEntries);
 }

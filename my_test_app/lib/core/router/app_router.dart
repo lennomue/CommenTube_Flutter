@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/game/presentation/game_screen.dart';
@@ -56,14 +56,20 @@ GoRouter createAppRouter() {
       GoRoute(
         path: '/game/:videoId',
         name: AppRoute.game.name,
-        builder: (context, state) =>
-            GameScreen(videoId: state.pathParameters['videoId']!),
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          fullscreenDialog: true,
+          child: GameScreen(videoId: state.pathParameters['videoId']!),
+        ),
       ),
       GoRoute(
         path: '/result/:videoId',
         name: AppRoute.result.name,
-        builder: (context, state) =>
-            ResultScreen(videoId: state.pathParameters['videoId']!),
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          fullscreenDialog: true,
+          child: ResultScreen(videoId: state.pathParameters['videoId']!),
+        ),
       ),
       GoRoute(
         path: '/answer/:videoId',

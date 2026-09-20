@@ -6,6 +6,7 @@ import '../../../core/models/quiz.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/state/quiz_experience_controller.dart';
+import '../../../core/widgets/minimizable_page_surface.dart';
 import 'quiz_detail_panel.dart';
 
 class ResultScreen extends ConsumerWidget {
@@ -42,44 +43,47 @@ class _ResultContent extends ConsumerWidget {
     final nextVideoId = usesArtistSession
         ? session.nextVideoId
         : _nextVideoId(allQuizzes, quiz.quiz.videoId);
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            QuizDetailPanel(
-              quiz: quiz,
-              bottomPadding: 130,
-              onMinimize: () => _minimize(context, ref),
-              onArtistOpen: (artist) => _openArtist(context, ref, artist),
-              leading: IconButton(
-                key: const ValueKey('minimize-result-button'),
-                tooltip: 'リザルトを小さくする',
-                onPressed: () => _minimize(context, ref),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+    return MinimizablePageSurface(
+      dragRegionHeight: 260,
+      onMinimize: () => _minimize(context, ref),
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              QuizDetailPanel(
+                quiz: quiz,
+                bottomPadding: 130,
+                onArtistOpen: (artist) => _openArtist(context, ref, artist),
+                leading: IconButton(
+                  key: const ValueKey('minimize-result-button'),
+                  tooltip: 'リザルトを小さくする',
+                  onPressed: () => _minimize(context, ref),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                ),
               ),
-            ),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 18,
-              child: _NextQuizButton(
-                label: finishesArtistSession ? 'FINISH' : 'NEXT QUIZ',
-                enabled: finishesArtistSession || nextVideoId != null,
-                onPressed: finishesArtistSession
-                    ? () => _finishArtistSession(context, ref)
-                    : nextVideoId == null
-                    ? null
-                    : () {
-                        if (usesArtistSession) {
-                          ref
-                              .read(artistQuizSessionProvider.notifier)
-                              .advance();
-                        }
-                        context.goToGame(nextVideoId);
-                      },
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 18,
+                child: _NextQuizButton(
+                  label: finishesArtistSession ? 'FINISH' : 'NEXT QUIZ',
+                  enabled: finishesArtistSession || nextVideoId != null,
+                  onPressed: finishesArtistSession
+                      ? () => _finishArtistSession(context, ref)
+                      : nextVideoId == null
+                      ? null
+                      : () {
+                          if (usesArtistSession) {
+                            ref
+                                .read(artistQuizSessionProvider.notifier)
+                                .advance();
+                          }
+                          context.goToGame(nextVideoId);
+                        },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

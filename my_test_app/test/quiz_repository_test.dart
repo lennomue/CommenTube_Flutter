@@ -123,4 +123,13 @@ void main() {
     expect(genreLabel('decade_1950s'), '1950s');
     expect(genreLabel('decade_1980s'), '1980s');
   });
+
+  test('直近のプレイ時刻は分・時間単位で表示する', () {
+    final now = DateTime.utc(2026, 9, 20, 12);
+    expect(
+      formatRelativeTime(DateTime.utc(2026, 9, 20, 11, 45), now: now),
+      '15分前',
+    );
+    expect(formatRelativeTime(DateTime.utc(2026, 9, 20, 8), now: now), '4時間前');
+  });
 }

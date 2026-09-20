@@ -5,39 +5,66 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/hint_progress.dart';
 import '../../../core/models/quiz.dart';
 import '../../../core/repositories/quiz_providers.dart';
+import '../../../core/repositories/quiz_history_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/state/quiz_experience_controller.dart';
 import '../../../core/utils/display_formatters.dart';
+import '../../../core/widgets/minimizable_page_surface.dart';
 
-class GameScreen extends ConsumerWidget {
+class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key, required this.videoId});
 
   final String videoId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final quiz = ref.watch(quizProvider(videoId));
+  ConsumerState<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends ConsumerState<GameScreen> {
+  bool _recordedHistory = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final quiz = ref.watch(quizProvider(widget.videoId));
     return quiz.when(
-      data: (item) => item == null
-          ? const _MissingQuizScreen()
-          : _GameContent(
-              key: ValueKey(item.quiz.videoId),
-              quiz: item,
-              onMinimize: () {
-                ref
-                    .read(minimizedQuizExperienceProvider.notifier)
-                    .minimize(QuizExperienceKind.game, item.quiz.videoId);
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  context.goHome();
-                }
-              },
-            ),
+      data: (item) {
+        if (item == null) {
+          return const _MissingQuizScreen();
+        }
+        _recordHistoryOnce(item.quiz.videoId);
+        void minimize() {
+          ref
+              .read(minimizedQuizExperienceProvider.notifier)
+              .minimize(QuizExperienceKind.game, item.quiz.videoId);
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            context.goHome();
+          }
+        }
+
+        return MinimizablePageSurface(
+          dragRegionHeight: 165,
+          onMinimize: minimize,
+          child: _GameContent(
+            key: ValueKey(item.quiz.videoId),
+            quiz: item,
+            onMinimize: minimize,
+          ),
+        );
+      },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stackTrace) => const _MissingQuizScreen(),
     );
+  }
+
+  void _recordHistoryOnce(String videoId) {
+    if (_recordedHistory) {
+      return;
+    }
+    _recordedHistory = true;
+    ref.read(quizHistoryRepositoryProvider).recordPlay(videoId);
   }
 }
 
@@ -322,71 +349,63 @@ class _GameHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = quiz.quiz;
-    return GestureDetector(
+    return Container(
       key: const ValueKey('game-minimize-area'),
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 300) {
-          onMinimize();
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF505050), Color(0xFF151515)],
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF505050), Color(0xFF151515)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                key: const ValueKey('minimize-game-button'),
+                tooltip: 'ゲームを小さくする',
+                onPressed: onMinimize,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              ),
+              Text(
+                data.contentGenres.isEmpty
+                    ? 'ジャンル不明'
+                    : genreLabel(data.contentGenres.first),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
           ),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  key: const ValueKey('minimize-game-button'),
-                  tooltip: 'ゲームを小さくする',
-                  onPressed: onMinimize,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.play_circle_outline_rounded,
+                  value: formatCompactCount(quiz.videoStats.viewCount),
                 ),
-                Text(
-                  data.contentGenres.isEmpty
-                      ? 'ジャンル不明'
-                      : genreLabel(data.contentGenres.first),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.thumb_up_alt_outlined,
+                  value: formatCompactCount(quiz.videoStats.likeCount),
                 ),
-                const SizedBox(width: 48),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.play_circle_outline_rounded,
-                    value: formatCompactCount(quiz.videoStats.viewCount),
-                  ),
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Icons.calendar_month_outlined,
+                  value: formatDate(data.postedAt),
                 ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.thumb_up_alt_outlined,
-                    value: formatCompactCount(quiz.videoStats.likeCount),
-                  ),
-                ),
-                Expanded(
-                  child: _StatItem(
-                    icon: Icons.calendar_month_outlined,
-                    value: formatDate(data.postedAt),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

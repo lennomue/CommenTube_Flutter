@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/favorite.dart';
+import '../../../core/models/quiz.dart';
+import '../../../core/models/quiz_history.dart';
 import '../../../core/repositories/favorite_providers.dart';
+import '../../../core/repositories/quiz_history_providers.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/state/quiz_experience_controller.dart';
+import '../../../core/utils/display_formatters.dart';
 import '../../result/presentation/quiz_detail_panel.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -15,7 +20,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  static const _tabs = [
+  static const _favoriteTabs = [
     (FavoriteKind.comment, Icons.chat_bubble_outline_rounded, 'コメント'),
     (FavoriteKind.lyric, Icons.music_note_rounded, '歌詞'),
     (FavoriteKind.song, Icons.album_outlined, '楽曲'),
@@ -34,10 +39,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final favorites = ref.watch(favoritesProvider);
+    final history = ref.watch(quizHistoryProvider);
+    final quizzes = ref.watch(quizzesProvider);
     return SafeArea(
       bottom: false,
       child: DefaultTabController(
-        length: _tabs.length,
+        length: _favoriteTabs.length + 1,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -55,7 +62,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 controller: _searchController,
                 onChanged: (value) => setState(() => _query = value),
                 decoration: InputDecoration(
-                  hintText: 'お気に入りを検索',
+                  hintText: 'お気に入り・履歴を検索',
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _query.isEmpty
                       ? null
@@ -80,29 +87,54 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               tabs: [
-                for (final tab in _tabs) Tab(icon: Icon(tab.$2), text: tab.$3),
+                for (final tab in _favoriteTabs)
+                  Tab(icon: Icon(tab.$2), text: tab.$3),
+                const Tab(icon: Icon(Icons.history_rounded), text: '履歴'),
               ],
             ),
             Expanded(
-              child: favorites.when(
-                data: (items) => TabBarView(
-                  children: [
-                    for (final tab in _tabs)
-                      _FavoriteList(
+              child: TabBarView(
+                children: [
+                  for (final tab in _favoriteTabs)
+                    favorites.when(
+                      data: (items) => _FavoriteList(
                         kind: tab.$1,
                         favorites: _matchingFavorites(items, tab.$1),
                         hasQuery: _query.trim().isNotEmpty,
                       ),
-                  ],
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stackTrace) => const _LibraryError(),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (error, stackTrace) => const _LibraryError(),
+                    ),
+                  history.when(
+                    data: (records) => quizzes.when(
+                      data: (items) => _HistoryList(
+                        records: records,
+                        quizzes: items,
+                        query: _query,
+                        onQuizSelected: _openHistoryQuiz,
+                      ),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (error, stackTrace) => const _HistoryError(),
+                    ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => const _HistoryError(),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _openHistoryQuiz(String videoId) {
+    ref.read(artistQuizSessionProvider.notifier).clear();
+    ref.read(minimizedQuizExperienceProvider.notifier).clear();
+    context.openGame(videoId);
   }
 
   List<SavedFavorite> _matchingFavorites(
@@ -117,6 +149,94 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               (query.isEmpty || item.displayText.toLowerCase().contains(query)),
         )
         .toList(growable: false);
+  }
+}
+
+class _HistoryList extends StatelessWidget {
+  const _HistoryList({
+    required this.records,
+    required this.quizzes,
+    required this.query,
+    required this.onQuizSelected,
+  });
+
+  final List<QuizHistoryRecord> records;
+  final List<QuizWithLiveStats> quizzes;
+  final String query;
+  final ValueChanged<String> onQuizSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final quizzesById = {for (final quiz in quizzes) quiz.quiz.videoId: quiz};
+    final normalizedQuery = query.trim().toLowerCase();
+    final visibleRecords = records
+        .where((record) {
+          final title = quizzesById[record.videoId]?.quiz.title;
+          return title != null &&
+              (normalizedQuery.isEmpty ||
+                  title.toLowerCase().contains(normalizedQuery));
+        })
+        .toList(growable: false);
+    if (visibleRecords.isEmpty) {
+      return Center(
+        child: Text(
+          normalizedQuery.isEmpty ? 'クイズ履歴はまだありません' : '検索に一致する履歴はありません',
+          style: const TextStyle(color: Color(0xFFAAAAAA)),
+        ),
+      );
+    }
+    return ListView.separated(
+      key: const PageStorageKey('quiz-history-list'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      itemCount: visibleRecords.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final record = visibleRecords[index];
+        final quiz = quizzesById[record.videoId]!;
+        return Material(
+          color: const Color(0xFF1C1C1C),
+          borderRadius: BorderRadius.circular(14),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: ValueKey('history-quiz-${record.videoId}'),
+            onTap: () => onQuizSelected(record.videoId),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              child: Row(
+                children: [
+                  const Icon(Icons.history_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          quiz.quiz.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${formatCompactCount(quiz.videoStats.viewCount)}回視聴 ・ '
+                          '高評価 ${formatCompactCount(quiz.videoStats.likeCount)} ・ '
+                          '${formatRelativeTime(record.playedAt)}',
+                          style: const TextStyle(
+                            color: Color(0xFFAAAAAA),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -283,6 +403,15 @@ class _LibraryError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: Text('お気に入りを読み込めませんでした'));
+  }
+}
+
+class _HistoryError extends StatelessWidget {
+  const _HistoryError();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('履歴を読み込めませんでした'));
   }
 }
 

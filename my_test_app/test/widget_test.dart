@@ -7,8 +7,11 @@ import 'package:my_test_app/app.dart';
 import 'package:my_test_app/core/models/favorite.dart';
 import 'package:my_test_app/core/models/quiz.dart';
 import 'package:my_test_app/core/models/quiz_filter.dart';
+import 'package:my_test_app/core/models/quiz_history.dart';
 import 'package:my_test_app/core/repositories/favorite_providers.dart';
 import 'package:my_test_app/core/repositories/favorite_repository.dart';
+import 'package:my_test_app/core/repositories/quiz_history_providers.dart';
+import 'package:my_test_app/core/repositories/quiz_history_repository.dart';
 import 'package:my_test_app/core/repositories/quiz_providers.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
 import 'package:my_test_app/core/router/app_router.dart';
@@ -19,8 +22,17 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final historyRepository = _TestQuizHistoryRepository();
+    addTearDown(historyRepository.close);
 
-    await tester.pumpWidget(const ProviderScope(child: CommenTubeApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
+        ],
+        child: const CommenTubeApp(),
+      ),
+    );
     await _pumpAsyncScreen(tester);
 
     expect(find.text('CommenTube'), findsOneWidget);
@@ -38,6 +50,8 @@ void main() {
     );
     expect(find.byIcon(Icons.home_rounded), findsOneWidget);
     expect(find.byIcon(Icons.video_library_outlined), findsOneWidget);
+    expect(find.text('HOME'), findsOneWidget);
+    expect(find.text('LIBRARY'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byKey(const ValueKey('quick-filter-j-pop')));
@@ -76,11 +90,14 @@ void main() {
       SavedFavorite.song(videoId: 'video-1', title: 'ライブラリの楽曲'),
       SavedFavorite.artist('ライブラリのアーティスト'),
     ]);
+    final historyRepository = _TestQuizHistoryRepository();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const CommenTubeApp(),
       ),
@@ -165,12 +182,15 @@ void main() {
       ),
     ]);
     final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           quizRepositoryProvider.overrideWithValue(repository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const CommenTubeApp(),
       ),
@@ -215,12 +235,15 @@ void main() {
       ),
     ]);
     final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           quizRepositoryProvider.overrideWithValue(repository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const CommenTubeApp(),
       ),
@@ -362,12 +385,15 @@ void main() {
       ),
     ]);
     final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           quizRepositoryProvider.overrideWithValue(repository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const CommenTubeApp(),
       ),
@@ -424,8 +450,10 @@ void main() {
       ),
     ]);
     final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
     final router = createAppRouter();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     addTearDown(router.dispose);
     router.go('/result/small-result');
 
@@ -434,6 +462,7 @@ void main() {
         overrides: [
           quizRepositoryProvider.overrideWithValue(repository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: CommenTubeApp(router: router),
       ),
@@ -471,12 +500,15 @@ void main() {
     final favoriteRepository = _TestFavoriteRepository([
       SavedFavorite.artist('Test Artist'),
     ]);
+    final historyRepository = _TestQuizHistoryRepository();
     addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           quizRepositoryProvider.overrideWithValue(repository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const CommenTubeApp(),
       ),
@@ -528,6 +560,177 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('クイズ開始履歴をLibraryから表示して再開できる', (tester) async {
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _TestQuizRepository([
+      _buildTestQuiz(
+        videoId: 'history-video',
+        title: 'History Song',
+        artist: 'History Artist',
+      ),
+    ]);
+    final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
+    addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          quizRepositoryProvider.overrideWithValue(repository),
+          favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
+        ],
+        child: const CommenTubeApp(),
+      ),
+    );
+    await _pumpAsyncScreen(tester);
+
+    await tester.tap(find.byKey(const ValueKey('quiz-card-history-video')));
+    await _pumpAsyncScreen(tester);
+    expect(historyRepository.records.single.videoId, 'history-video');
+    await tester.tap(find.byKey(const ValueKey('minimize-game-button')));
+    await _pumpAsyncScreen(tester);
+    await tester.tap(find.byIcon(Icons.video_library_outlined));
+    await _pumpAsyncScreen(tester);
+    await tester.tap(find.widgetWithText(Tab, '履歴'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('History Song'), findsOneWidget);
+    expect(find.textContaining('回視聴'), findsOneWidget);
+    expect(find.textContaining('高評価'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('history-quiz-history-video')));
+    await _pumpAsyncScreen(tester);
+    expect(find.byKey(const ValueKey('minimize-game-button')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('関連動画を4種類の規定順でResultに表示する', (tester) async {
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _TestQuizRepository([
+      _buildTestQuiz(
+        videoId: 'related-source',
+        title: 'Related Source',
+        artist: 'Source Artist',
+        relatedVideos: const [
+          RelatedVideo(videoId: 'same-video', relationType: 'same_music'),
+          RelatedVideo(videoId: 'series-video', relationType: 'seriese'),
+          RelatedVideo(videoId: 'cover-video', relationType: 'cover'),
+          RelatedVideo(videoId: 'mad-video', relationType: 'part_of'),
+        ],
+      ),
+      _buildTestQuiz(
+        videoId: 'same-video',
+        title: 'Same Song Video',
+        artist: 'Same Artist',
+      ),
+      _buildTestQuiz(
+        videoId: 'series-video',
+        title: 'Series Song Video',
+        artist: 'Series Artist',
+      ),
+      _buildTestQuiz(
+        videoId: 'cover-video',
+        title: 'Cover Song Video',
+        artist: 'Cover Artist',
+      ),
+      _buildTestQuiz(
+        videoId: 'mad-video',
+        title: 'MAD Source Video',
+        artist: 'MAD Artist',
+      ),
+    ]);
+    final favoriteRepository = _TestFavoriteRepository();
+    final historyRepository = _TestQuizHistoryRepository();
+    final router = createAppRouter()..go('/result/related-source');
+    addTearDown(favoriteRepository.close);
+    addTearDown(historyRepository.close);
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          quizRepositoryProvider.overrideWithValue(repository),
+          favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
+        ],
+        child: CommenTubeApp(router: router),
+      ),
+    );
+    await _pumpAsyncScreen(tester);
+    await tester.tap(find.widgetWithText(Tab, '関連'));
+    await tester.pumpAndSettle();
+
+    final labels = ['同じ曲', 'シリーズ', 'カバー', 'MAD・構成元'];
+    for (final label in labels) {
+      expect(find.text(label), findsOneWidget);
+    }
+    for (var index = 1; index < labels.length; index++) {
+      expect(
+        tester.getTopLeft(find.text(labels[index - 1])).dy,
+        lessThan(tester.getTopLeft(find.text(labels[index])).dy),
+      );
+    }
+    expect(find.text('Same Song Video'), findsOneWidget);
+    expect(find.textContaining('年前'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'iOSの左端スワイプでGameとResultを閉じない',
+    (tester) async {
+      tester.view.physicalSize = const Size(430, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _TestQuizRepository([
+        _buildTestQuiz(
+          videoId: 'swipe-video',
+          title: 'Swipe Song',
+          artist: 'Swipe Artist',
+        ),
+      ]);
+      final favoriteRepository = _TestFavoriteRepository();
+      final historyRepository = _TestQuizHistoryRepository();
+      addTearDown(favoriteRepository.close);
+      addTearDown(historyRepository.close);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            quizRepositoryProvider.overrideWithValue(repository),
+            favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+            quizHistoryRepositoryProvider.overrideWithValue(historyRepository),
+          ],
+          child: const CommenTubeApp(),
+        ),
+      );
+      await _pumpAsyncScreen(tester);
+      await tester.tap(find.byKey(const ValueKey('quiz-card-swipe-video')));
+      await _pumpAsyncScreen(tester);
+
+      await tester.dragFrom(const Offset(1, 350), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('minimize-game-button')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('skip-button')));
+      await _pumpAsyncScreen(tester);
+      await tester.dragFrom(const Offset(1, 350), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('next-quiz-button')), findsOneWidget);
+      expect(find.text('Swipe Song'), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
 }
 
 Future<void> _pumpAsyncScreen(WidgetTester tester) async {
@@ -592,6 +795,36 @@ class _TestFavoriteRepository implements FavoriteRepository {
   Future<void> close() => _controller.close();
 }
 
+class _TestQuizHistoryRepository implements QuizHistoryRepository {
+  _TestQuizHistoryRepository([Iterable<QuizHistoryRecord> records = const []])
+    : records = List.of(records);
+
+  final List<QuizHistoryRecord> records;
+  final StreamController<List<QuizHistoryRecord>> _controller =
+      StreamController<List<QuizHistoryRecord>>.broadcast();
+
+  @override
+  Stream<List<QuizHistoryRecord>> watchHistory() async* {
+    yield List.unmodifiable(records);
+    yield* _controller.stream;
+  }
+
+  @override
+  Future<void> recordPlay(String videoId, {DateTime? playedAt}) async {
+    records.removeWhere((record) => record.videoId == videoId);
+    records.insert(
+      0,
+      QuizHistoryRecord(videoId: videoId, playedAt: playedAt ?? DateTime.now()),
+    );
+    if (records.length > 50) {
+      records.removeRange(50, records.length);
+    }
+    _controller.add(List.unmodifiable(records));
+  }
+
+  Future<void> close() => _controller.close();
+}
+
 QuizWithLiveStats _buildTestQuiz({
   required String videoId,
   required String title,
@@ -599,6 +832,7 @@ QuizWithLiveStats _buildTestQuiz({
   List<String>? artists,
   ThumbnailHintType thumbnailHintType = ThumbnailHintType.comment,
   int extraCommentCount = 0,
+  List<RelatedVideo> relatedVideos = const [],
 }) {
   final representativeComment = QuizComment(
     commentId: 'comment-$videoId',
@@ -647,7 +881,7 @@ QuizWithLiveStats _buildTestQuiz({
       postedAt: DateTime.utc(2020, 6, 14),
       musicLyrics: const ['短い歌詞ヒント', 'もうひとつの歌詞ヒント'],
       comments: [representativeComment, secondaryComment, ...extraComments],
-      relatedVideos: const [],
+      relatedVideos: relatedVideos,
       metaData: const {},
       embedding: null,
     ),

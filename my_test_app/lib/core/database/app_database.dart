@@ -20,14 +20,23 @@ class FavoriteEntries extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [FavoriteEntries])
+class QuizHistoryEntries extends Table {
+  TextColumn get videoId => text()();
+
+  DateTimeColumn get playedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {videoId};
+}
+
+@DriftDatabase(tables: [FavoriteEntries, QuizHistoryEntries])
 final class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   AppDatabase.defaults() : super(driftDatabase(name: 'commentube'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -35,6 +44,9 @@ final class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
         await migrator.createTable(favoriteEntries);
+      }
+      if (from < 3) {
+        await migrator.createTable(quizHistoryEntries);
       }
     },
   );
@@ -56,5 +68,34 @@ final class AppDatabase extends _$AppDatabase {
 
   Future<void> removeFavorite(String id) {
     return (delete(favoriteEntries)..where((row) => row.id.equals(id))).go();
+  }
+
+  Stream<List<QuizHistoryEntry>> watchQuizHistory() {
+    final query = select(quizHistoryEntries)
+      ..orderBy([(row) => OrderingTerm.desc(row.playedAt)]);
+    return query.watch();
+  }
+
+  Future<void> recordQuizPlay(String videoId, DateTime playedAt) {
+    return transaction(() async {
+      await into(quizHistoryEntries).insertOnConflictUpdate(
+        QuizHistoryEntriesCompanion.insert(
+          videoId: videoId,
+          playedAt: playedAt,
+        ),
+      );
+      final orderedEntries = await (select(
+        quizHistoryEntries,
+      )..orderBy([(row) => OrderingTerm.desc(row.playedAt)])).get();
+      final staleVideoIds = orderedEntries
+          .skip(50)
+          .map((entry) => entry.videoId)
+          .toList(growable: false);
+      if (staleVideoIds.isNotEmpty) {
+        await (delete(
+          quizHistoryEntries,
+        )..where((row) => row.videoId.isIn(staleVideoIds))).go();
+      }
+    });
   }
 }
