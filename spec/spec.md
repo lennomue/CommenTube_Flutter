@@ -92,7 +92,7 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
 
 `title`も非NULLです。音楽以外では動画タイトルの主要部分を使用します。`artists`には、その動画への実質的な寄与者を登録します。音楽動画では主なバンド・作曲者・名義等を優先し、単にアップロードしただけのチャンネルは登録しません。MADではMAD制作者、非音楽では十分に寄与した演者・制作者・チャンネルを登録できます。
 
-`thumbnail_hint_type`はHomeのサムネイルとGameの初期開放ヒントに使う非NULLのenum列で、`comment`または`lyric`を持ちます。`comment`なら`comments`の先頭要素、`lyric`なら`music_lyrics`の先頭要素を表示するため、本文を重複保存しません。選択された配列が空でないことをデータ投入時に検証します。
+`thumbnail_hint_type`はHomeのサムネイルとGameの初期開放ヒントに使う非NULLのenum列で、`comment`または`lyric`を持ちます。`comment`なら`comments`の先頭要素、`lyric`なら`music_lyrics`の先頭要素を表示するため、本文を重複保存しません。`comments`は人が最終採用した1〜8件を表示順に保持します。選択された配列が空でないことと、コメントが8件を超えないことをデータ投入時に検証します。
 
 `meta_data`は将来のembedding生成、文字検索、作品をまたぐ関連候補の発見に使う補助情報です。`keywords`と`related_works`等を持つjsonbとし、クイズの正解判定や画面への直接表示には使用しません。現在の検索ではJSON内の文字列を平坦化して部分一致の対象にします。コメントや歌詞だけでは表れにくいアニメ、映画、アルバム、シリーズ、文化的文脈等を保存できます。
 
@@ -139,7 +139,7 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
       "Won't you please let me (Back in your heart)",
       "But now since I see you in his arms (I want you back)"
    ],
-   "comments": [                                       // jsonb型 (固定コメントヒント。本文・ID・投稿時期・評価数キャッシュを保持)
+   "comments": [                                       // jsonb型 (1〜8件の固定コメントヒント。本文・ID・投稿時期・評価数キャッシュを表示順に保持)
       {
          "comment_id": "UgzYLJd1ADkFg4QPuOh4AaABAg",
          "commented_at": "2020-07-14T10:00:08Z",
@@ -375,11 +375,12 @@ Riverpodに置くのは複数画面・共通ナビゲーションから参照す
 
 クイズデータは`_YouTube_Data_API`のローカル開発者ツールで作成し、アプリ本体やSupabaseから分離します。自動処理の出力を正本DBへ直接書かず、次の段階を必須とします。
 
-1. YouTube Data APIの`videos.list`と`commentThreads.list`から動画情報・統計・トップレベルコメントを取得し、取得時刻付きのraw JSONへ保存する。
-2. URL、繰り返し、短すぎる文、重複、タイトルやアーティストの直接的な答え漏れを決定的なルールで除外する。高評価数だけで選ばず、言語も記録する。OpenAIを使わない場合は`review-rules`で候補ごとの判定、検出言語、答え漏れ、ノイズ、スコア、人の承認欄をJSON/CSVへ出す。決定的ルールは事前選別であり、別言語の人物名や文脈上の答え漏れを完全に決めないため、最終承認を人または次段の型付き提案へ渡す。
-3. OpenAI APIのStructured Outputsを使う場合は、Pydanticで固定した型へコメント評価、表示タイトル、ジャンル、言語、アーティスト候補、検索キーワードを出力する。ChatGPT Plus契約はAPIキーやAPI利用枠を含まないため、開発者用のAPIキーを別途`.env`へ設定する。
-4. Jevは任意の実験的な`CommentRanker`とし、作品固有性・有用性・答え漏れ・ノイズの採点だけを担当させる。タイトル、アーティスト、関連動画などの事実生成やDB確定には使わない。early access中は外部送信を実装せず、同じ基準の入力JSONを生成して比較可能にする。
-5. AI提案を`needs_review`状態のJSONとUTF-8 CSVへ出力し、Google Sheets等で人がコメント言語、答え漏れ、事実、既存アーティストとの同一性、既存動画・関連動画を確認する。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
-6. 人が`approved`にしたデータだけをSupabase投入候補とする。`artist_id`候補は既存Artistと照合し、`videos_junction`の関係は必ず人が確定する。投入処理はフェーズ7で、承認済みデータだけを受け付ける別コマンドとして実装する。
+1. YouTube Data APIの`videos.list`と`commentThreads.list`から動画情報・統計・最大200件程度のトップレベルコメントを取得し、取得時刻付きのraw JSONへ保存する。
+2. URL、繰り返し、短すぎる文、重複、タイトルやアーティストの直接的な答え漏れを決定的なルールで除外し、最大40件程度の意味評価候補にする。高評価数だけで選ばず、言語も記録する。OpenAIを使わない場合は`review-rules`で候補ごとの判定、検出言語、答え漏れ、ノイズ、スコア、人の承認欄をJSON/CSVへ出す。決定的ルールは事前選別であり、別言語の人物名や文脈上の答え漏れを完全に決めないため、最終承認を人または次段の型付き提案へ渡す。
+3. OpenAIまたはJevで意味評価する場合は、人が確認するコメント候補を最大15件程度へ絞る。OpenAI APIのStructured OutputsはPydanticで固定した型へコメント評価、表示タイトル、ジャンル、言語、アーティスト候補、検索キーワードを出力できる。ChatGPT Plus契約はAPIキーやAPI利用枠を含まないため、利用時は開発者用のAPIキーを別途`.env`へ設定する。
+4. Jevは任意の実験的な`CommentRanker`とし、作品固有性・有用性・答え漏れ・ノイズの型付き採点だけを担当させる。自由文のタイトル、アーティスト、関連動画などの事実生成やDB確定には使わない。early access中は外部送信を実装せず、同じ基準の入力JSONを生成して比較可能にする。
+5. AI提案を`needs_review`状態のJSONと、1コメント1行のUTF-8 CSVへ出力する。Google Sheetsには最大15件程度の候補を同期し、人がコメント言語、答え漏れ、有用性、事実、既存アーティストとの同一性、既存動画・関連動画を確認して、表示順を含む1〜8件を最終採用する。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
+6. Google Sheets自動同期はローカルPythonツールからGoogle Sheets APIを使用する。既存の個人用シートには本人のGoogleアカウントによるOAuth 2.0デスクトップ認証を使い、`credentials.json`と`token.json`をGit対象外にする。既知のSpreadsheet IDへ値を書くだけならGoogle Drive APIへ権限を広げない。再同期時は安定IDで行を更新し、人が入力した採否・メモ・最終順序を上書きしない。
+7. 人が`approved`にしたデータだけをSupabase投入候補とする。`artist_id`候補は既存Artistと照合し、`videos_junction`の関係は必ず人が確定する。投入処理はフェーズ7で、承認済みデータだけを受け付ける別コマンドとして実装する。
 
 APIキーは`_YouTube_Data_API/.env`だけに置きます。共有用の`.env.example`は置かず、必要な変数名と作成方法は`_YouTube_Data_API/README.md`を正本とします。`.env`、rawデータ、AI生成物、認証キャッシュはGit管理外とし、Flutter asset、Python/Dartソース、`Info.plist`、コミット履歴へ実キーやトークンを入れません。API例外はキー付きURLやレスポンス本文をそのまま出力せず、リソース名とHTTPステータスだけに秘匿化します。漏えいが疑われるキーは提供元で無効化・再発行します。

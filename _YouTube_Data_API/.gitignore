@@ -1,11 +1,13 @@
 # Local secrets. Keep real API keys out of Git.
 .env
 .env.*
-!.env.example
 
 # Google OAuth credentials and local authorization tokens.
 credentials.json
 token.json
+client_secret*.json
+service-account*.json
+google-credentials*.json
 .cache
 
 # Generated or downloaded working data.

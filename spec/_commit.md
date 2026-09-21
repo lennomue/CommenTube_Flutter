@@ -150,3 +150,13 @@
 - 通常・縮小の回答円とスキップボタンの下端を揃え、スキップボタンの右余白を24pxへ調整
 - Playlistの開閉、回答円の縮小・復元、各ボタン位置を検証する回帰テストを追加
 - `flutter analyze`指摘なし、Flutter全35テスト、iOS向け署名なしデバッグビルドの成功を確認
+
+## 2026-09-21: データレビュー工程とSheets連携計画の明文化
+
+- `collect`、`review-rules`、`prepare-jev`、`draft-openai`が実際に使う外部APIをREADMEへ明記
+- `commentube-data`がeditable installと`pyproject.toml`のconsole scriptから作られる仕組みを説明
+- `src/commentube_data`内の各Pythonファイルの役割と依存関係を追記
+- raw最大200件、決定的ルール最大40件、AI/Jev候補最大15件、人の最終採用1〜8件へレビュー工程を整理
+- JSONを機械処理の正本、CSVをSheets・人レビュー用の交換形式として位置づけ
+- Google Sheets API、OAuth 2.0デスクトップ認証、4シート構成、再同期時に人の入力を保護する方針を追加
+- OAuth資格情報とトークンに使われる一般的なファイル名を追加でGit対象外へ設定
