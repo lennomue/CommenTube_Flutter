@@ -20,16 +20,17 @@ cd /Users/lennomue/Dev/CommenTube/_YouTube_Data_API
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
-cp .env.example .env
 ```
 
-`.env`へ実キーを保存します。`.env`、取得データ、生成データはGit対象外です。キーをDart、JSON、Notebook、`Info.plist`へ直接書かないでください。
+`_YouTube_Data_API/.env`をエディタで作成し、以下の必要項目だけを保存します。共有用テンプレートは置かず、必要な変数名はこのREADMEを正本とします。`.env`、取得データ、生成データはGit対象外です。キーをDart、JSON、Notebook、`Info.plist`へ直接書かないでください。
 
 ```dotenv
 YOUTUBE_API_KEY=...
 OPENAI_API_KEY=...
 OPENAI_MODEL=利用可能なモデルID
 ```
+
+OpenAIとJevを使わない間は`YOUTUBE_API_KEY`以外の行は省略できます。作成後は`chmod 600 .env`で自分だけが読み書きできる状態にします。
 
 ChatGPT Plusの契約とOpenAI APIの利用・課金は別です。自動処理にはOpenAI Platformで発行したAPIキーが必要です。OpenAIを使わず、取得JSONとルール判定だけを目視確認する運用もできます。
 

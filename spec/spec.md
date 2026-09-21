@@ -382,4 +382,4 @@ Riverpodに置くのは複数画面・共通ナビゲーションから参照す
 5. AI提案を`needs_review`状態のJSONとUTF-8 CSVへ出力し、Google Sheets等で人がコメント言語、答え漏れ、事実、既存アーティストとの同一性、既存動画・関連動画を確認する。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
 6. 人が`approved`にしたデータだけをSupabase投入候補とする。`artist_id`候補は既存Artistと照合し、`videos_junction`の関係は必ず人が確定する。投入処理はフェーズ7で、承認済みデータだけを受け付ける別コマンドとして実装する。
 
-APIキーは`_YouTube_Data_API/.env`だけに置き、`.env.example`にはプレースホルダーだけを置きます。`.env`、rawデータ、AI生成物、認証キャッシュはGit管理外とし、Flutter asset、Python/Dartソース、`Info.plist`、コミット履歴へ実キーやトークンを入れません。API例外はキー付きURLやレスポンス本文をそのまま出力せず、リソース名とHTTPステータスだけに秘匿化します。漏えいが疑われるキーは提供元で無効化・再発行します。
+APIキーは`_YouTube_Data_API/.env`だけに置きます。共有用の`.env.example`は置かず、必要な変数名と作成方法は`_YouTube_Data_API/README.md`を正本とします。`.env`、rawデータ、AI生成物、認証キャッシュはGit管理外とし、Flutter asset、Python/Dartソース、`Info.plist`、コミット履歴へ実キーやトークンを入れません。API例外はキー付きURLやレスポンス本文をそのまま出力せず、リソース名とHTTPステータスだけに秘匿化します。漏えいが疑われるキーは提供元で無効化・再発行します。

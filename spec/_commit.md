@@ -134,3 +134,9 @@
 - 初期表示名を各プラットフォームで`CommenTube`へ統一し、未使用の`path_provider`直接依存を除去
 - `flutter analyze`指摘なし、Flutter全35テスト、Python全6テスト、iOS署名なしデバッグビルド成功を確認
 - iPhone実機でフェーズ6.1のUI・操作が正常に動作することを確認
+
+## 2026-09-21: APIキー設定ファイルの整理
+
+- READMEと内容が重複していた`_YouTube_Data_API/.env.example`を削除
+- 必要な環境変数名、`.env`の作成場所、ファイル権限の設定を`_YouTube_Data_API/README.md`へ集約
+- 実キーを持つ`_YouTube_Data_API/.env`は引き続きGit対象外であることを確認
