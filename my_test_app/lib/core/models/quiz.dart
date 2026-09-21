@@ -56,6 +56,7 @@ class Artist {
     required this.artistId,
     required this.name,
     required this.subNames,
+    required this.embedding,
   });
 
   factory Artist.fromJson(Map<String, dynamic> json) {
@@ -63,12 +64,16 @@ class Artist {
       artistId: json['artist_id'] as String,
       name: json['name'] as String,
       subNames: Quiz.stringList(json['sub_names']),
+      embedding: (json['embedding'] as List<dynamic>?)
+          ?.map((value) => (value as num).toDouble())
+          .toList(growable: false),
     );
   }
 
   final String artistId;
   final String name;
   final List<String> subNames;
+  final List<double>? embedding;
 }
 
 class RelatedVideo {
@@ -109,7 +114,6 @@ class Quiz {
     required List<Artist> artists,
     required List<RelatedVideo> relatedVideos,
   }) {
-    final thumbnailHint = json['thumbnail_hint'] as Map<String, dynamic>;
     final releasedAt = json['music_released_at'];
     final rawEmbedding = json['embedding'] as List<dynamic>?;
     return Quiz(
@@ -118,7 +122,7 @@ class Quiz {
         json['video_atmosphere_color'] as Map<String, dynamic>,
       ),
       thumbnailHintType: ThumbnailHintType.fromJson(
-        thumbnailHint['hint_type'] as String,
+        json['thumbnail_hint_type'] as String,
       ),
       contentGenres: stringList(json['content_genres']),
       videoGenre: json['video_genre'] as String,

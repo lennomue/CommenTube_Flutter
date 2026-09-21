@@ -29,20 +29,22 @@ class DriftFavoriteRepository implements FavoriteRepository {
       await _database.removeFavorite(favorite.id);
       return;
     }
-    await _database.saveFavorite(
-      FavoriteEntriesCompanion.insert(
-        id: favorite.id,
-        kind: favorite.kind.name,
-        videoId: Value(favorite.videoId),
-        itemKey: favorite.itemKey,
-        displayText: favorite.displayText,
-        createdAt: Value(favorite.createdAt),
-      ),
-    );
+    await _database.saveFavorite(_toCompanion(favorite));
   }
 
   @override
   Future<void> removeFavorite(String id) => _database.removeFavorite(id);
+
+  FavoriteEntriesCompanion _toCompanion(SavedFavorite favorite) {
+    return FavoriteEntriesCompanion.insert(
+      id: favorite.id,
+      kind: favorite.kind.name,
+      videoId: Value(favorite.videoId),
+      itemKey: favorite.itemKey,
+      displayText: favorite.displayText,
+      createdAt: Value(favorite.createdAt),
+    );
+  }
 
   SavedFavorite _toFavorite(FavoriteEntry row) {
     return SavedFavorite(

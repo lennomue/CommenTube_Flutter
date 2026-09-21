@@ -1,0 +1,41 @@
+[
+  {
+    "playlist_id": "public-motown-starters",
+    "owner_user_id": "10000000-0000-4000-8000-000000000001",
+    "owner_name": "Motown Listener",
+    "name": "Motownから始める10分",
+    "description": "同じ曲のライブ版と音源版を聴き比べる公開プレイリストです。",
+    "is_public": true,
+    "allows_collaboration": false,
+    "video_ids": ["y2bVIBwpCTA", "UvynvnxZJ3Q", "sOnqjkJTMaA"],
+    "created_at": "2026-09-18T10:00:00Z",
+    "updated_at": "2026-09-20T12:00:00Z",
+    "embedding": null
+  },
+  {
+    "playlist_id": "public-internet-classics",
+    "owner_user_id": "10000000-0000-4000-8000-000000000002",
+    "owner_name": "Web Culture Archive",
+    "name": "インターネット定番作品",
+    "description": "動画文化を代表する音楽とミームを集めました。",
+    "is_public": true,
+    "allows_collaboration": false,
+    "video_ids": ["dQw4w9WgXcQ", "9bZkp7q19f0", "J---aiyznGQ"],
+    "created_at": "2026-09-17T09:00:00Z",
+    "updated_at": "2026-09-19T17:30:00Z",
+    "embedding": null
+  },
+  {
+    "playlist_id": "public-japanese-discovery",
+    "owner_user_id": "10000000-0000-4000-8000-000000000003",
+    "owner_name": "ことばで聴く人",
+    "name": "日本語ヒントで発見",
+    "description": "コメントや歌詞が日本語の作品を中心にした公開プレイリストです。",
+    "is_public": true,
+    "allows_collaboration": true,
+    "video_ids": ["q0T7Ex7MkLM", "FwTLkGgRXJQ", "jePk5vWvyFk"],
+    "created_at": "2026-09-16T08:00:00Z",
+    "updated_at": "2026-09-21T08:30:00Z",
+    "embedding": null
+  }
+]

@@ -2,7 +2,7 @@
   {
     "video_id": "y2bVIBwpCTA",
     "video_atmosphere_color": {"h": 352, "s": 0.32, "l": 0.54},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["r_and_b_soul", "pop", "decade_1960s"],
     "video_genre": "live_performance_video",
     "title": "I Want You Back",
@@ -19,7 +19,7 @@
   {
     "video_id": "UvynvnxZJ3Q",
     "video_atmosphere_color": {"h": 26, "s": 0.61, "l": 0.44},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["r_and_b_soul", "pop", "decade_1960s"],
     "video_genre": "lyric_video",
     "title": "I Want You Back",
@@ -36,7 +36,7 @@
   {
     "video_id": "dQw4w9WgXcQ",
     "video_atmosphere_color": {"h": 210, "s": 0.44, "l": 0.41},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["pop", "decade_1980s"],
     "video_genre": "music_video",
     "title": "Never Gonna Give You Up",
@@ -53,7 +53,7 @@
   {
     "video_id": "9bZkp7q19f0",
     "video_atmosphere_color": {"h": 197, "s": 0.73, "l": 0.48},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["k_pop", "dance_electronic", "decade_2010s"],
     "video_genre": "music_video",
     "title": "GANGNAM STYLE",
@@ -70,7 +70,7 @@
   {
     "video_id": "ASO_zypdnsQ",
     "video_atmosphere_color": {"h": 8, "s": 0.76, "l": 0.48},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["k_pop", "dance_electronic", "decade_2010s"],
     "video_genre": "music_video",
     "title": "GENTLEMAN",
@@ -87,7 +87,7 @@
   {
     "video_id": "kJQP7kiw5Fk",
     "video_atmosphere_color": {"h": 22, "s": 0.67, "l": 0.49},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["latin", "pop", "decade_2010s"],
     "video_genre": "music_video",
     "title": "Despacito",
@@ -104,7 +104,7 @@
   {
     "video_id": "JGwWNGJdvx8",
     "video_atmosphere_color": {"h": 187, "s": 0.45, "l": 0.39},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["pop", "decade_2010s"],
     "video_genre": "music_video",
     "title": "Shape of You",
@@ -121,7 +121,7 @@
   {
     "video_id": "2Vv-BfVoq4g",
     "video_atmosphere_color": {"h": 214, "s": 0.37, "l": 0.46},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["pop", "decade_2010s"],
     "video_genre": "music_video",
     "title": "Perfect",
@@ -138,7 +138,7 @@
   {
     "video_id": "dkcdSj4qBWU",
     "video_atmosphere_color": {"h": 281, "s": 0.34, "l": 0.43},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["rock", "pop", "decade_1980s"],
     "video_genre": "music_video",
     "title": "There Must Be More to Life Than This",
@@ -155,7 +155,7 @@
   {
     "video_id": "sOnqjkJTMaA",
     "video_atmosphere_color": {"h": 4, "s": 0.72, "l": 0.31},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["pop", "r_and_b_soul", "decade_1980s"],
     "video_genre": "music_video",
     "title": "Thriller",
@@ -172,7 +172,7 @@
   {
     "video_id": "fJ9rUzIMcZQ",
     "video_atmosphere_color": {"h": 31, "s": 0.28, "l": 0.42},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["rock", "decade_1970s"],
     "video_genre": "music_video",
     "title": "Bohemian Rhapsody",
@@ -189,7 +189,7 @@
   {
     "video_id": "HgzGwKwLmgM",
     "video_atmosphere_color": {"h": 42, "s": 0.65, "l": 0.47},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["rock", "decade_1970s"],
     "video_genre": "music_video",
     "title": "Don't Stop Me Now",
@@ -206,7 +206,7 @@
   {
     "video_id": "q0T7Ex7MkLM",
     "video_atmosphere_color": {"h": 347, "s": 0.62, "l": 0.58},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["j_pop", "vocaloid_utaite", "anime_soundtrack", "decade_2010s"],
     "video_genre": "music_video",
     "title": "東京サマーセッション",
@@ -223,7 +223,7 @@
   {
     "video_id": "FwTLkGgRXJQ",
     "video_atmosphere_color": {"h": 323, "s": 0.51, "l": 0.48},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["j_pop", "vocaloid_utaite", "decade_2010s"],
     "video_genre": "music_video",
     "title": "東京サマーセッション",
@@ -240,7 +240,7 @@
   {
     "video_id": "jePk5vWvyFk",
     "video_atmosphere_color": {"h": 202, "s": 0.48, "l": 0.57},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["j_pop", "anime_soundtrack", "seasonal_winter", "decade_2010s"],
     "video_genre": "music_video",
     "title": "東京ウインターセッション",
@@ -257,7 +257,7 @@
   {
     "video_id": "9Upo1ELtvhw",
     "video_atmosphere_color": {"h": 334, "s": 0.71, "l": 0.61},
-    "thumbnail_hint": {"hint_type": "lyric"},
+    "thumbnail_hint_type": "lyric",
     "content_genres": ["j_pop", "anime_soundtrack", "decade_2020s"],
     "video_genre": "music_video",
     "title": "愛♡スクリ～ム！",
@@ -274,7 +274,7 @@
   {
     "video_id": "AbBaG-Bq6_E",
     "video_atmosphere_color": {"h": 46, "s": 0.58, "l": 0.53},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["j_pop", "traditional_japanese_pop", "anime_soundtrack", "decade_2020s"],
     "video_genre": "fan_made_video",
     "title": "ルビィちゃん 雅楽",
@@ -291,7 +291,7 @@
   {
     "video_id": "DyDfgMOUjCI",
     "video_atmosphere_color": {"h": 53, "s": 0.78, "l": 0.57},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["pop", "indie_alternative", "decade_2010s"],
     "video_genre": "music_video",
     "title": "bad guy",
@@ -308,7 +308,7 @@
   {
     "video_id": "jNQXAC9IVRw",
     "video_atmosphere_color": {"h": 112, "s": 0.26, "l": 0.46},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["non_music"],
     "video_genre": "non_music",
     "title": "Me at the zoo",
@@ -325,7 +325,7 @@
   {
     "video_id": "J---aiyznGQ",
     "video_atmosphere_color": {"h": 32, "s": 0.31, "l": 0.42},
-    "thumbnail_hint": {"hint_type": "comment"},
+    "thumbnail_hint_type": "comment",
     "content_genres": ["non_music"],
     "video_genre": "non_music",
     "title": "Keyboard Cat",
@@ -338,5 +338,75 @@
     ],
     "meta_data": {"keywords": ["cat", "internet meme", "keyboard"], "related_works": []},
     "embedding": null
+  },
+  {
+    "video_id": "OPf0YbXqDm0", "video_atmosphere_color": {"h": 338, "s": 0.62, "l": 0.45},
+    "thumbnail_hint_type": "comment", "content_genres": ["pop", "r_and_b_soul", "decade_2010s"], "video_genre": "music_video",
+    "title": "Uptown Funk", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2014-11-10"}, "posted_at": "2014-11-19T14:00:00Z",
+    "music_lyrics": ["Uptown funk you up"], "comments": [{"comment_id": "comment_uptown_01", "commented_at": "2024-11-19T00:00:00Z", "content": "Ten years later, this choreography still makes the whole room move."}],
+    "meta_data": {"keywords": ["funk", "dance", "retro"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "RgKAFK5djSk", "video_atmosphere_color": {"h": 204, "s": 0.37, "l": 0.43},
+    "thumbnail_hint_type": "lyric", "content_genres": ["pop", "hiphop", "decade_2010s"], "video_genre": "music_video",
+    "title": "See You Again", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2015-03-10"}, "posted_at": "2015-04-06T00:00:00Z",
+    "music_lyrics": ["It's been a long day without you, my friend"], "comments": [{"comment_id": "comment_see_you_01", "commented_at": "2025-04-06T00:00:00Z", "content": "A farewell song that became larger than the film it closed."}],
+    "meta_data": {"keywords": ["farewell", "film soundtrack", "piano"], "related_works": ["Furious 7"]}, "embedding": null
+  },
+  {
+    "video_id": "60ItHLz5WEA", "video_atmosphere_color": {"h": 213, "s": 0.48, "l": 0.38},
+    "thumbnail_hint_type": "lyric", "content_genres": ["dance_electronic", "pop", "decade_2010s"], "video_genre": "music_video",
+    "title": "Faded", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2015-12-03"}, "posted_at": "2015-12-03T00:00:00Z",
+    "music_lyrics": ["Where are you now?"], "comments": [{"comment_id": "comment_faded_01", "commented_at": "2023-12-03T00:00:00Z", "content": "The empty buildings make the drop feel even more distant."}],
+    "meta_data": {"keywords": ["EDM", "abandoned places", "melancholy"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "CevxZvSJLk8", "video_atmosphere_color": {"h": 44, "s": 0.72, "l": 0.52},
+    "thumbnail_hint_type": "comment", "content_genres": ["pop", "decade_2010s"], "video_genre": "music_video",
+    "title": "Roar", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2013-08-10"}, "posted_at": "2013-09-05T00:00:00Z",
+    "music_lyrics": ["I got the eye of the tiger"], "comments": [{"comment_id": "comment_roar_01", "commented_at": "2023-09-05T00:00:00Z", "content": "The jungle story turns a confidence anthem into a tiny adventure film."}],
+    "meta_data": {"keywords": ["jungle", "empowerment", "tiger"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "hT_nvWreIhg", "video_atmosphere_color": {"h": 190, "s": 0.36, "l": 0.48},
+    "thumbnail_hint_type": "lyric", "content_genres": ["pop", "rock", "decade_2010s"], "video_genre": "music_video",
+    "title": "Counting Stars", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2013-06-14"}, "posted_at": "2013-05-31T00:00:00Z",
+    "music_lyrics": ["Lately, I've been, I've been losing sleep"], "comments": [{"comment_id": "comment_counting_01", "commented_at": "2024-05-31T00:00:00Z", "content": "The stomping rhythm is recognizable before the chorus arrives."}],
+    "meta_data": {"keywords": ["folk pop", "stomp", "basement"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "09R8_2nJtjg", "video_atmosphere_color": {"h": 6, "s": 0.55, "l": 0.50},
+    "thumbnail_hint_type": "comment", "content_genres": ["pop", "decade_2010s"], "video_genre": "music_video",
+    "title": "Sugar", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2015-01-13"}, "posted_at": "2015-01-14T00:00:00Z",
+    "music_lyrics": ["Sugar, yes please"], "comments": [{"comment_id": "comment_sugar_01", "commented_at": "2024-01-14T00:00:00Z", "content": "Wedding guests discovering the band behind the curtain is the perfect reveal."}],
+    "meta_data": {"keywords": ["wedding", "surprise", "Los Angeles"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "YQHsXMglC9A", "video_atmosphere_color": {"h": 34, "s": 0.19, "l": 0.35},
+    "thumbnail_hint_type": "lyric", "content_genres": ["pop", "r_and_b_soul", "decade_2010s"], "video_genre": "music_video",
+    "title": "Hello", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2015-10-23"}, "posted_at": "2015-10-22T00:00:00Z",
+    "music_lyrics": ["Hello from the other side"], "comments": [{"comment_id": "comment_hello_01", "commented_at": "2025-10-22T00:00:00Z", "content": "That first word is enough to identify an entire era of pop ballads."}],
+    "meta_data": {"keywords": ["ballad", "telephone", "sepia"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "lp-EO5I60KA", "video_atmosphere_color": {"h": 22, "s": 0.43, "l": 0.47},
+    "thumbnail_hint_type": "comment", "content_genres": ["pop", "folk_acoustic", "decade_2010s"], "video_genre": "music_video",
+    "title": "Thinking Out Loud", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2014-09-24"}, "posted_at": "2014-10-07T00:00:00Z",
+    "music_lyrics": ["Take me into your loving arms"], "comments": [{"comment_id": "comment_thinking_01", "commented_at": "2024-10-07T00:00:00Z", "content": "The single-room dance makes the performance feel unusually close."}],
+    "meta_data": {"keywords": ["ballroom", "dance", "acoustic pop"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "uelHwf8o7_U", "video_atmosphere_color": {"h": 18, "s": 0.31, "l": 0.32},
+    "thumbnail_hint_type": "lyric", "content_genres": ["hiphop", "pop", "decade_2010s"], "video_genre": "music_video",
+    "title": "Love The Way You Lie", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2010-06-18"}, "posted_at": "2010-08-05T00:00:00Z",
+    "music_lyrics": ["Just gonna stand there and watch me burn"], "comments": [{"comment_id": "comment_love_lie_01", "commented_at": "2024-08-05T00:00:00Z", "content": "The fire imagery makes the argument in the lyrics impossible to ignore."}],
+    "meta_data": {"keywords": ["duet", "fire", "conflict"], "related_works": []}, "embedding": null
+  },
+  {
+    "video_id": "pRpeEdMmmQ0", "video_atmosphere_color": {"h": 88, "s": 0.66, "l": 0.45},
+    "thumbnail_hint_type": "comment", "content_genres": ["pop", "afro", "latin", "decade_2010s"], "video_genre": "music_video",
+    "title": "Waka Waka (This Time for Africa)", "languages": ["english"], "music_released_at": {"precision": "day", "date": "2010-05-07"}, "posted_at": "2010-06-04T00:00:00Z",
+    "music_lyrics": ["This time for Africa"], "comments": [{"comment_id": "comment_waka_01", "commented_at": "2022-06-04T00:00:00Z", "content": "One chorus still brings back the sound of an entire World Cup."}],
+    "meta_data": {"keywords": ["World Cup", "football", "Africa"], "related_works": []}, "embedding": null
   }
 ]

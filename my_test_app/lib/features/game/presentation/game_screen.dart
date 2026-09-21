@@ -10,11 +10,17 @@ import '../../../core/router/app_router.dart';
 import '../../../core/state/quiz_experience_controller.dart';
 import '../../../core/utils/display_formatters.dart';
 import '../../../core/widgets/minimizable_page_surface.dart';
+import '../../../core/widgets/neon_accent.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
-  const GameScreen({super.key, required this.videoId});
+  const GameScreen({
+    super.key,
+    required this.videoId,
+    this.restoreFromMinimized = false,
+  });
 
   final String videoId;
+  final bool restoreFromMinimized;
 
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
@@ -22,14 +28,27 @@ class GameScreen extends ConsumerStatefulWidget {
 
 class _GameScreenState extends ConsumerState<GameScreen> {
   bool _recordedHistory = false;
+  bool? _isNew;
 
   @override
   Widget build(BuildContext context) {
     final quiz = ref.watch(quizProvider(widget.videoId));
+    final history = ref.watch(quizHistoryProvider);
     return quiz.when(
       data: (item) {
         if (item == null) {
           return const _MissingQuizScreen();
+        }
+        if (_isNew == null) {
+          final records = history.value;
+          if (records == null && history.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          _isNew = !(records ?? const []).any(
+            (record) => record.videoId == widget.videoId,
+          );
         }
         _recordHistoryOnce(item.quiz.videoId);
         void minimize() {
@@ -43,14 +62,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           }
         }
 
-        return MinimizablePageSurface(
-          dragRegionHeight: 165,
+        return _GameContent(
+          key: ValueKey(item.quiz.videoId),
+          quiz: item,
           onMinimize: minimize,
-          child: _GameContent(
-            key: ValueKey(item.quiz.videoId),
-            quiz: item,
-            onMinimize: minimize,
-          ),
+          restoreFromMinimized: widget.restoreFromMinimized,
+          isNew: _isNew ?? false,
         );
       },
       loading: () =>
@@ -69,10 +86,18 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 }
 
 class _GameContent extends StatefulWidget {
-  const _GameContent({super.key, required this.quiz, required this.onMinimize});
+  const _GameContent({
+    super.key,
+    required this.quiz,
+    required this.onMinimize,
+    required this.restoreFromMinimized,
+    required this.isNew,
+  });
 
   final QuizWithLiveStats quiz;
   final VoidCallback onMinimize;
+  final bool restoreFromMinimized;
+  final bool isNew;
 
   @override
   State<_GameContent> createState() => _GameContentState();
@@ -80,12 +105,21 @@ class _GameContent extends StatefulWidget {
 
 class _GameContentState extends State<_GameContent> {
   late final Set<String> _unlockedHintKeys;
+  late final MinimizablePageController _minimizeController;
+  late final TextEditingController _answerSearchController;
+  late final FocusNode _answerSearchFocusNode;
   bool _isCompact = false;
+  bool _isAnswerInputOpen = false;
+  double _answerPullDistance = 0;
+  double _answerCloseDistance = 0;
   _AnswerFeedback? _feedback;
 
   @override
   void initState() {
     super.initState();
+    _minimizeController = MinimizablePageController();
+    _answerSearchController = TextEditingController();
+    _answerSearchFocusNode = FocusNode();
     final data = widget.quiz.quiz;
     _unlockedHintKeys = {
       if (data.thumbnailHintType == ThumbnailHintType.comment &&
@@ -98,143 +132,198 @@ class _GameContentState extends State<_GameContent> {
   }
 
   @override
+  void dispose() {
+    _answerSearchController.dispose();
+    _answerSearchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final quiz = widget.quiz;
     final data = quiz.quiz;
     final progress = HintProgress(unlockedHintKeys: _unlockedHintKeys);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: DefaultTabController(
-          length: 3,
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  _GameHeader(quiz: quiz, onMinimize: widget.onMinimize),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
-                    alignment: Alignment.topCenter,
-                    child: _isCompact
-                        ? const SizedBox(width: double.infinity)
-                        : const ColoredBox(
-                            key: ValueKey('game-hint-tabs'),
-                            color: Color(0xFF111111),
-                            child: TabBar(
-                              tabs: [
-                                Tab(
-                                  icon: Icon(Icons.chat_bubble_outline_rounded),
-                                  text: 'コメント',
-                                ),
-                                Tab(
-                                  icon: Icon(Icons.music_note_rounded),
-                                  text: '歌詞',
-                                ),
-                                Tab(
-                                  icon: Icon(Icons.info_outline_rounded),
-                                  text: '楽曲情報',
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _HintTabBody(
-                          onScrollDirection: _handleScrollDirection,
-                          children: [
-                            for (final indexed in quiz.comments.indexed)
-                              _UnlockableHint(
-                                hintKey: HintKey.comment(
-                                  indexed.$2.comment.commentId,
-                                ),
-                                label: 'コメント ${indexed.$1 + 1}',
-                                progress: progress,
-                                onUnlock: _unlock,
-                                child: _CommentHint(comment: indexed.$2),
-                              ),
-                          ],
+        bottom: false,
+        child: Stack(
+          children: [
+            DefaultTabController(
+              length: 3,
+              initialIndex: data.thumbnailHintType == ThumbnailHintType.lyric
+                  ? 1
+                  : 0,
+              child: MinimizablePageSurface(
+                controller: _minimizeController,
+                topHeight: 200,
+                onMinimize: widget.onMinimize,
+                animateFromMinimized: widget.restoreFromMinimized,
+                foreground: Stack(
+                  children: [
+                    if (_isAnswerInputOpen)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          key: const ValueKey('answer-input-dismiss-area'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _closeAnswerInput,
                         ),
-                        _HintTabBody(
-                          onScrollDirection: _handleScrollDirection,
-                          children: [
-                            for (final indexed in data.musicLyrics.indexed)
-                              _UnlockableHint(
-                                hintKey: HintKey.lyric(indexed.$1),
-                                label: '歌詞 ${indexed.$1 + 1}',
-                                progress: progress,
-                                onUnlock: _unlock,
-                                child: _HintCard(text: indexed.$2),
-                              ),
-                          ],
-                        ),
-                        _HintTabBody(
-                          onScrollDirection: _handleScrollDirection,
-                          children: [
-                            _UnlockableHint(
-                              hintKey: HintKey.videoGenre,
-                              label: '動画種別',
-                              progress: progress,
-                              onUnlock: _unlock,
-                              child: _HintCard(
-                                text:
-                                    '動画種別: ${videoGenreLabel(data.videoGenre)}',
-                              ),
-                            ),
-                            _UnlockableHint(
-                              hintKey: HintKey.contentGenres,
-                              label: '内容ジャンル',
-                              progress: progress,
-                              onUnlock: _unlock,
-                              child: _HintCard(
-                                text:
-                                    'ジャンル: ${data.contentGenres.map(genreLabel).join(' / ')}',
-                              ),
-                            ),
-                            _UnlockableHint(
-                              hintKey: HintKey.languages,
-                              label: '言語',
-                              progress: progress,
-                              onUnlock: _unlock,
-                              child: _HintCard(
-                                text:
-                                    '言語: ${data.languages.map(languageLabel).join(' / ')}',
-                              ),
-                            ),
-                            _UnlockableHint(
-                              hintKey: HintKey.artists,
-                              label: 'アーティスト',
-                              progress: progress,
-                              onUnlock: _unlock,
-                              child: _HintCard(
-                                text: 'アーティスト: ${data.artistNames.join(' / ')}',
-                              ),
-                            ),
-                            _UnlockableHint(
-                              hintKey: HintKey.musicReleasedAt,
-                              label: '楽曲リリース日',
-                              progress: progress,
-                              onUnlock: _unlock,
-                              child: _HintCard(
-                                text:
-                                    '楽曲リリース: ${formatPartialDate(data.musicReleasedAt)}',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
+                    _FloatingGameActions(
+                      compact: _isCompact,
+                      isInputOpen: _isAnswerInputOpen,
+                      pullDistance: _answerPullDistance,
+                      closeDistance: _answerCloseDistance,
+                      searchController: _answerSearchController,
+                      searchFocusNode: _answerSearchFocusNode,
+                      onPullUpdate: _handleAnswerPullUpdate,
+                      onPullEnd: _handleAnswerPullEnd,
+                      onClosePullUpdate: _handleAnswerClosePullUpdate,
+                      onClosePullEnd: _handleAnswerClosePullEnd,
+                      onSearch: () =>
+                          _answer(_answerSearchController.text.trim()),
+                      onSkip: () => context.goToResult(data.videoId),
                     ),
+                  ],
+                ),
+                top: ColoredBox(
+                  color: const Color(0xFF111111),
+                  child: Column(
+                    children: [
+                      _GameHeader(
+                        quiz: quiz,
+                        onMinimize: _minimizeController.minimize,
+                      ),
+                      ColoredBox(
+                        key: ValueKey('game-hint-tabs'),
+                        color: Color(0xFF111111),
+                        child: TabBar(
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicator: widget.isNew
+                              ? const NeonTabIndicator()
+                              : const UnderlineTabIndicator(
+                                  borderSide: BorderSide(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                          tabs: [
+                            Tab(
+                              icon: Icon(Icons.chat_bubble_outline_rounded),
+                              text: 'コメント',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.music_note_rounded),
+                              text: '歌詞',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.info_outline_rounded),
+                              text: '作品情報',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+                body: ColoredBox(
+                  color: const Color(0xFF090909),
+                  child: Stack(
+                    children: [
+                      TabBarView(
+                        children: [
+                          _HintTabBody(
+                            onScrollDirection: _handleScrollDirection,
+                            children: [
+                              for (final indexed in quiz.comments.indexed)
+                                _UnlockableHint(
+                                  hintKey: HintKey.comment(
+                                    indexed.$2.comment.commentId,
+                                  ),
+                                  label: 'コメント ${indexed.$1 + 1}',
+                                  progress: progress,
+                                  onUnlock: _unlock,
+                                  child: _CommentHint(comment: indexed.$2),
+                                ),
+                            ],
+                          ),
+                          _HintTabBody(
+                            onScrollDirection: _handleScrollDirection,
+                            children: [
+                              for (final indexed in data.musicLyrics.indexed)
+                                _UnlockableHint(
+                                  hintKey: HintKey.lyric(indexed.$1),
+                                  label: '歌詞 ${indexed.$1 + 1}',
+                                  progress: progress,
+                                  onUnlock: _unlock,
+                                  child: _HintCard(text: indexed.$2),
+                                ),
+                            ],
+                          ),
+                          _HintTabBody(
+                            onScrollDirection: _handleScrollDirection,
+                            children: [
+                              _UnlockableHint(
+                                hintKey: HintKey.videoGenre,
+                                label: '動画種別',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(
+                                  text:
+                                      '動画種別: ${videoGenreLabel(data.videoGenre)}',
+                                ),
+                              ),
+                              _UnlockableHint(
+                                hintKey: HintKey.contentGenres,
+                                label: '内容ジャンル',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(
+                                  text:
+                                      'ジャンル: ${data.contentGenres.map(genreLabel).join(' / ')}',
+                                ),
+                              ),
+                              _UnlockableHint(
+                                hintKey: HintKey.languages,
+                                label: '言語',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(
+                                  text:
+                                      '言語: ${data.languages.map(languageLabel).join(' / ')}',
+                                ),
+                              ),
+                              _UnlockableHint(
+                                hintKey: HintKey.artists,
+                                label: 'アーティスト',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(
+                                  text:
+                                      'アーティスト: ${data.artistNames.join(' / ')}',
+                                ),
+                              ),
+                              _UnlockableHint(
+                                hintKey: HintKey.musicReleasedAt,
+                                label: '楽曲リリース日',
+                                progress: progress,
+                                onUnlock: _unlock,
+                                child: _HintCard(
+                                  text:
+                                      '楽曲リリース: ${formatPartialDate(data.musicReleasedAt)}',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              _FloatingGameActions(
-                compact: _isCompact,
-                onAnswer: _answer,
-                onSkip: () => context.goToResult(data.videoId),
-              ),
-              if (_feedback != null) _AnswerFeedbackOverlay(_feedback!),
-            ],
-          ),
+            ),
+            if (_feedback != null) _AnswerFeedbackOverlay(_feedback!),
+          ],
         ),
       ),
     );
@@ -252,17 +341,92 @@ class _GameContentState extends State<_GameContent> {
     setState(() => _isCompact = compact);
   }
 
-  Future<void> _answer() async {
-    final isCorrect = await context.openAnswerWebView(widget.quiz.quiz.videoId);
+  void _handleAnswerPullUpdate(DragUpdateDetails details) {
+    if (_isAnswerInputOpen) {
+      return;
+    }
+    setState(() {
+      _answerPullDistance = (_answerPullDistance - details.delta.dy).clamp(
+        0.0,
+        96.0,
+      );
+    });
+  }
+
+  void _handleAnswerPullEnd(DragEndDetails details) {
+    final opens =
+        _answerPullDistance >= 42 || (details.primaryVelocity ?? 0) < -500;
+    if (opens) {
+      _openAnswerInput();
+      return;
+    }
+    setState(() => _answerPullDistance = 0);
+  }
+
+  void _openAnswerInput() {
+    setState(() {
+      _isAnswerInputOpen = true;
+      _answerPullDistance = 96;
+      _answerCloseDistance = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _answerSearchFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _handleAnswerClosePullUpdate(DragUpdateDetails details) {
+    if (!_isAnswerInputOpen) {
+      return;
+    }
+    setState(() {
+      _answerCloseDistance = (_answerCloseDistance + details.delta.dy).clamp(
+        0.0,
+        96.0,
+      );
+    });
+  }
+
+  void _handleAnswerClosePullEnd(DragEndDetails details) {
+    final closes =
+        _answerCloseDistance >= 34 || (details.primaryVelocity ?? 0) > 500;
+    if (closes) {
+      _closeAnswerInput();
+      return;
+    }
+    setState(() => _answerCloseDistance = 0);
+  }
+
+  void _closeAnswerInput() {
+    _answerSearchFocusNode.unfocus();
+    _answerSearchController.clear();
+    setState(() {
+      _isAnswerInputOpen = false;
+      _answerPullDistance = 0;
+      _answerCloseDistance = 0;
+    });
+  }
+
+  Future<void> _answer(String searchQuery) async {
+    if (searchQuery.isEmpty) {
+      return;
+    }
+    _answerSearchFocusNode.unfocus();
+    final isCorrect = await context.openAnswerWebView(
+      widget.quiz.quiz.videoId,
+      searchQuery,
+    );
     if (!mounted || isCorrect == null) {
       return;
     }
+    _closeAnswerInput();
     setState(() {
       _feedback = isCorrect
           ? _AnswerFeedback.correct
           : _AnswerFeedback.incorrect;
     });
-    await Future<void>.delayed(Duration(milliseconds: isCorrect ? 700 : 1000));
+    await Future<void>.delayed(Duration(milliseconds: isCorrect ? 1050 : 1500));
     if (!mounted) {
       return;
     }
@@ -486,33 +650,68 @@ class _HintCard extends StatelessWidget {
 class _FloatingGameActions extends StatelessWidget {
   const _FloatingGameActions({
     required this.compact,
-    required this.onAnswer,
+    required this.isInputOpen,
+    required this.pullDistance,
+    required this.closeDistance,
+    required this.searchController,
+    required this.searchFocusNode,
+    required this.onPullUpdate,
+    required this.onPullEnd,
+    required this.onClosePullUpdate,
+    required this.onClosePullEnd,
+    required this.onSearch,
     required this.onSkip,
   });
 
   final bool compact;
-  final VoidCallback onAnswer;
+  final bool isInputOpen;
+  final double pullDistance;
+  final double closeDistance;
+  final TextEditingController searchController;
+  final FocusNode searchFocusNode;
+  final ValueChanged<DragUpdateDetails> onPullUpdate;
+  final ValueChanged<DragEndDetails> onPullEnd;
+  final ValueChanged<DragUpdateDetails> onClosePullUpdate;
+  final ValueChanged<DragEndDetails> onClosePullEnd;
+  final VoidCallback onSearch;
   final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
-    final answerSize = compact ? 62.0 : 112.0;
+    final openProgress = isInputOpen
+        ? 1.0
+        : (pullDistance / 96).clamp(0.0, 1.0);
+    final closeProgress = (closeDistance / 96).clamp(0.0, 1.0);
+    final baseSize = compact ? 62.0 : 112.0;
+    final answerSize =
+        baseSize + (276 - baseSize) * openProgress - (45 * closeProgress);
+    final collapsedBottom = compact ? 12.0 : 24.0;
+    final answerBottom =
+        collapsedBottom +
+        ((22 - collapsedBottom) * openProgress) -
+        (28 * closeProgress);
     return Positioned.fill(
-      child: IgnorePointer(
-        ignoring: false,
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              bottom: compact ? 12 : 24,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Semantics(
-                  button: true,
-                  label: '回答する',
+      child: Stack(
+        children: [
+          AnimatedPositioned(
+            duration: pullDistance > 0 && !isInputOpen
+                ? Duration.zero
+                : const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            left: 0,
+            right: 0,
+            bottom: answerBottom,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Semantics(
+                button: true,
+                label: isInputOpen ? '回答を検索' : '上にスワイプして回答',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: isInputOpen
+                      ? onClosePullUpdate
+                      : onPullUpdate,
+                  onVerticalDragEnd: isInputOpen ? onClosePullEnd : onPullEnd,
                   child: Material(
                     key: const ValueKey('answer-button'),
                     color: Colors.white,
@@ -520,39 +719,171 @@ class _FloatingGameActions extends StatelessWidget {
                     shadowColor: Colors.black,
                     shape: const CircleBorder(),
                     clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: onAnswer,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 240),
-                        width: answerSize,
-                        height: answerSize,
+                    child: AnimatedContainer(
+                      duration: pullDistance > 0 && !isInputOpen
+                          ? Duration.zero
+                          : const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: answerSize,
+                      height: answerSize,
+                      alignment: Alignment.center,
+                      child: Stack(
                         alignment: Alignment.center,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: compact
-                              ? const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.black,
-                                  size: 34,
-                                )
-                              : const Column(
+                        children: [
+                          Opacity(
+                            opacity: (1 - openProgress * 1.6).clamp(0, 1),
+                            child: Transform.translate(
+                              offset: const Offset(0, -24),
+                              child: compact
+                                  ? const Icon(
+                                      Icons.keyboard_arrow_up_rounded,
+                                      color: Colors.black,
+                                      size: 34,
+                                    )
+                                  : const Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.keyboard_arrow_up_rounded,
+                                          color: Colors.black,
+                                          size: 34,
+                                        ),
+                                        Text(
+                                          'ANSWER',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                          IgnorePointer(
+                            ignoring: !isInputOpen,
+                            child: Opacity(
+                              opacity: openProgress,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                ),
+                                child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.play_arrow_rounded,
-                                      color: Colors.black,
-                                      size: 38,
-                                    ),
-                                    Text(
-                                      'ANSWER',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 1.2,
+                                    if (isInputOpen)
+                                      TextField(
+                                        key: const ValueKey(
+                                          'answer-search-field',
+                                        ),
+                                        controller: searchController,
+                                        focusNode: searchFocusNode,
+                                        textInputAction: TextInputAction.search,
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          hintText: '検索ワード',
+                                          hintStyle: TextStyle(
+                                            color: Color(0xFF777777),
+                                          ),
+                                          filled: true,
+                                          fillColor: Color(0xFFD8D8D8),
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(22),
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        onSubmitted: (_) {
+                                          if (searchController.text
+                                              .trim()
+                                              .isNotEmpty) {
+                                            onSearch();
+                                          }
+                                        },
+                                      )
+                                    else
+                                      Container(
+                                        height: 39,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD8D8D8),
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
+                                        ),
                                       ),
+                                    const SizedBox(height: 8),
+                                    ValueListenableBuilder<TextEditingValue>(
+                                      valueListenable: searchController,
+                                      builder: (context, value, child) {
+                                        final enabled = value.text
+                                            .trim()
+                                            .isNotEmpty;
+                                        return IconButton(
+                                          key: const ValueKey(
+                                            'open-youtube-search',
+                                          ),
+                                          tooltip: 'YouTubeで検索',
+                                          onPressed: enabled ? onSearch : null,
+                                          iconSize: 42,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 48,
+                                            minHeight: 42,
+                                          ),
+                                          icon: Icon(
+                                            Icons.smart_display_rounded,
+                                            color: enabled
+                                                ? const Color(0xFFFF0033)
+                                                : const Color(0xFF343434),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 20,
+            child: IgnorePointer(
+              ignoring: openProgress > 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: 1 - openProgress,
+                child: Semantics(
+                  button: true,
+                  label: 'スキップ',
+                  child: Material(
+                    key: const ValueKey('skip-button'),
+                    color: const Color(0xFF303030),
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: onSkip,
+                      child: const SizedBox.square(
+                        dimension: 50,
+                        child: Icon(
+                          Icons.skip_next_rounded,
+                          color: Color(0xFFBEBEBE),
                         ),
                       ),
                     ),
@@ -560,32 +891,8 @@ class _FloatingGameActions extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              right: 16,
-              bottom: 20,
-              child: Semantics(
-                button: true,
-                label: 'スキップ',
-                child: Material(
-                  key: const ValueKey('skip-button'),
-                  color: const Color(0xFF303030),
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: onSkip,
-                    child: const SizedBox.square(
-                      dimension: 50,
-                      child: Icon(
-                        Icons.skip_next_rounded,
-                        color: Color(0xFFBEBEBE),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -605,30 +912,33 @@ class _AnswerFeedbackOverlay extends StatelessWidget {
       child: ColoredBox(
         color: const Color(0xE8000000),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                correct ? Icons.circle_outlined : Icons.close_rounded,
-                size: 104,
-                color: Colors.white,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                correct ? '正解！' : '不正解',
-                style: const TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
+          child: Transform.translate(
+            offset: const Offset(0, -24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  correct ? Icons.circle_outlined : Icons.close_rounded,
+                  size: 104,
+                  color: Colors.white,
                 ),
-              ),
-              if (!correct) ...[
-                const SizedBox(height: 10),
-                const Text(
-                  'ヒントを確認して、もう一度挑戦しましょう',
-                  style: TextStyle(color: Color(0xFFCCCCCC)),
+                const SizedBox(height: 20),
+                Text(
+                  correct ? '正解！' : '不正解',
+                  style: const TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
+                if (!correct) ...[
+                  const SizedBox(height: 10),
+                  const Text(
+                    'ヒントを確認して、もう一度挑戦しましょう',
+                    style: TextStyle(color: Color(0xFFCCCCCC)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -1,0 +1,20 @@
+# Local secrets. Keep real API keys out of Git.
+.env
+.env.*
+!.env.example
+
+# Google OAuth credentials and local authorization tokens.
+credentials.json
+token.json
+.cache
+
+# Generated or downloaded working data.
+.ipynb_checkpoints/
+data/raw/
+data/generated/
+
+# Python local build/cache files.
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/

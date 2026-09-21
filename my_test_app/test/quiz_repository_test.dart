@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_test_app/core/models/quiz.dart';
 import 'package:my_test_app/core/models/quiz_filter.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
+import 'package:my_test_app/core/repositories/public_playlist_repository.dart';
 import 'package:my_test_app/core/utils/display_formatters.dart';
 
 void main() {
@@ -13,7 +14,7 @@ void main() {
     final quizzes = await repository.getQuizzes();
     final cachedQuizzes = await repository.getQuizzes();
 
-    expect(quizzes, hasLength(20));
+    expect(quizzes, hasLength(30));
     expect(identical(quizzes, cachedQuizzes), isTrue);
 
     final first = quizzes.first;
@@ -36,6 +37,27 @@ void main() {
       'Shape of You',
     );
     expect(await repository.getQuiz('missing-video'), isNull);
+  });
+
+  test('関連アーティストを無方向の中間テーブルから取得する', () async {
+    final repository = AssetQuizRepository();
+
+    final fromGroup = await repository.getRelatedArtists('The Jackson 5');
+    final fromPerson = await repository.getRelatedArtists('Michael Jackson');
+
+    expect(fromGroup.map((item) => item.name), contains('Michael Jackson'));
+    expect(fromPerson.map((item) => item.name), contains('The Jackson 5'));
+    expect((await repository.getArtists()), hasLength(31));
+  });
+
+  test('公開プレイリストJSONを検索・保存候補として読み込む', () async {
+    const repository = AssetPublicPlaylistRepository();
+
+    final playlists = await repository.getPublicPlaylists();
+
+    expect(playlists, hasLength(3));
+    expect(playlists.first.name, 'Motownから始める10分');
+    expect(playlists.first.asUnownedPlaylist().isOwned, isFalse);
   });
 
   test('ジャンル・言語・投稿年をローカルで絞り込む', () async {
@@ -104,7 +126,7 @@ void main() {
     );
   });
 
-  test('thumbnail_hintは本文を重複保持せず先頭ヒントから解決する', () async {
+  test('thumbnail_hint_typeは本文を重複保持せず先頭ヒントから解決する', () async {
     final repository = AssetQuizRepository();
 
     final lyricQuiz = (await repository.getQuiz('UvynvnxZJ3Q'))!.quiz;

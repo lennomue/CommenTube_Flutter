@@ -1,5 +1,5 @@
 name: my_test_app
-description: "A new Flutter project."
+description: "YouTube動画をコメントなどのヒントから当てるCommenTubeアプリ。"
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -13,7 +13,6 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.4.3
   go_router: ^17.5.0
-  path_provider: ^2.1.6
   share_plus: ^13.3.0
   url_launcher: ^6.3.2
   webview_flutter: ^4.14.1
@@ -33,5 +32,7 @@ flutter:
     - assets/mock_data/quizzes.json
     - assets/mock_data/artists.json
     - assets/mock_data/artist_videos_junction.json
+    - assets/mock_data/artists_junction.json
     - assets/mock_data/videos_junction.json
     - assets/mock_data/youtube_api_mock.json
+    - assets/mock_data/public_playlists.json

@@ -73,7 +73,9 @@ String genreLabel(String genre) {
 
 String videoGenreLabel(String genre) {
   return switch (genre) {
-    'music_video' => '楽曲',
+    'release' => '楽曲',
+    'music_video' => 'ミュージックビデオ',
+    'cover_video' => 'カバー動画',
     'lyric_video' => '歌詞動画',
     'live_performance_video' => 'ライブ映像',
     'fan_made_video' => '合成MAD',

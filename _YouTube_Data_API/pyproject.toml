@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "commentube-data"
+version = "0.1.0"
+description = "Human-reviewed data preparation pipeline for CommenTube"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=1.0.0",
+  "pydantic>=2.8.0",
+  "python-dotenv>=1.0.1",
+  "requests>=2.32.0",
+]
+
+[project.scripts]
+commentube-data = "commentube_data.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

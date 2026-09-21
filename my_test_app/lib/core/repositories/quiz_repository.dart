@@ -11,6 +11,10 @@ abstract interface class QuizRepository {
   });
 
   Future<QuizWithLiveStats?> getQuiz(String videoId);
+
+  Future<List<Artist>> getArtists();
+
+  Future<List<Artist>> getRelatedArtists(String artistName);
 }
 
 class AssetQuizRepository implements QuizRepository {
@@ -18,6 +22,7 @@ class AssetQuizRepository implements QuizRepository {
     this.quizAssetPath = 'assets/mock_data/quizzes.json',
     this.artistsAssetPath = 'assets/mock_data/artists.json',
     this.artistVideosAssetPath = 'assets/mock_data/artist_videos_junction.json',
+    this.artistsJunctionAssetPath = 'assets/mock_data/artists_junction.json',
     this.videosJunctionAssetPath = 'assets/mock_data/videos_junction.json',
     this.youtubeStatsAssetPath = 'assets/mock_data/youtube_api_mock.json',
   });
@@ -25,9 +30,12 @@ class AssetQuizRepository implements QuizRepository {
   final String quizAssetPath;
   final String artistsAssetPath;
   final String artistVideosAssetPath;
+  final String artistsJunctionAssetPath;
   final String videosJunctionAssetPath;
   final String youtubeStatsAssetPath;
   Future<List<QuizWithLiveStats>>? _cache;
+  List<Artist> _artists = const [];
+  Map<String, List<String>> _relatedArtistIds = const {};
 
   @override
   Future<List<QuizWithLiveStats>> getQuizzes({
@@ -54,6 +62,27 @@ class AssetQuizRepository implements QuizRepository {
       }
     }
     return null;
+  }
+
+  @override
+  Future<List<Artist>> getArtists() async {
+    await getQuizzes();
+    return _artists;
+  }
+
+  @override
+  Future<List<Artist>> getRelatedArtists(String artistName) async {
+    final artists = await getArtists();
+    final artist = artists.where((item) => item.name == artistName).firstOrNull;
+    if (artist == null) {
+      return const [];
+    }
+    final relatedIds = _relatedArtistIds[artist.artistId] ?? const [];
+    final artistsById = {for (final item in artists) item.artistId: item};
+    return relatedIds
+        .map((id) => artistsById[id])
+        .whereType<Artist>()
+        .toList(growable: false);
   }
 
   bool _matches(Quiz quiz, QuizFilter filter) {
@@ -90,12 +119,14 @@ class AssetQuizRepository implements QuizRepository {
       rootBundle.loadString(artistVideosAssetPath),
       rootBundle.loadString(videosJunctionAssetPath),
       rootBundle.loadString(youtubeStatsAssetPath),
+      rootBundle.loadString(artistsJunctionAssetPath),
     ]);
     final quizzesJson = jsonDecode(sources[0]) as List<dynamic>;
     final artistsJson = jsonDecode(sources[1]) as List<dynamic>;
     final artistVideosJson = jsonDecode(sources[2]) as List<dynamic>;
     final videosJunctionJson = jsonDecode(sources[3]) as List<dynamic>;
     final apiJson = jsonDecode(sources[4]) as Map<String, dynamic>;
+    final artistsJunctionJson = jsonDecode(sources[5]) as List<dynamic>;
     final quizIds = quizzesJson
         .map((item) => (item as Map<String, dynamic>)['video_id'] as String)
         .toSet();
@@ -105,6 +136,29 @@ class AssetQuizRepository implements QuizRepository {
           item,
         ),
     };
+    _artists = List.unmodifiable(artistsById.values);
+    final relatedArtistIds = <String, List<String>>{};
+    final artistRelationKeys = <String>{};
+    for (final item in artistsJunctionJson) {
+      final row = item as Map<String, dynamic>;
+      final artistIdA = row['artist_id_a'] as String;
+      final artistIdB = row['artist_id_b'] as String;
+      if (row['relation_type'] != 'same_person') {
+        throw FormatException('未定義のartist relation_typeです');
+      }
+      if (!artistsById.containsKey(artistIdA) ||
+          !artistsById.containsKey(artistIdB) ||
+          artistIdA == artistIdB) {
+        throw FormatException('artists_junctionの参照が不正です');
+      }
+      final ordered = [artistIdA, artistIdB]..sort();
+      if (!artistRelationKeys.add('${ordered[0]}:${ordered[1]}')) {
+        throw FormatException('artists_junctionに重複があります');
+      }
+      relatedArtistIds.putIfAbsent(artistIdA, () => []).add(artistIdB);
+      relatedArtistIds.putIfAbsent(artistIdB, () => []).add(artistIdA);
+    }
+    _relatedArtistIds = Map.unmodifiable(relatedArtistIds);
     final artistsByVideo = <String, List<Artist>>{};
     for (final item in artistVideosJson) {
       final row = item as Map<String, dynamic>;
@@ -175,7 +229,9 @@ class AssetQuizRepository implements QuizRepository {
             throw FormatException('動画統計がありません: ${quiz.videoId}');
           }
           if (quiz.thumbnailHint == null) {
-            throw FormatException('thumbnail_hintの参照先がありません: ${quiz.videoId}');
+            throw FormatException(
+              'thumbnail_hint_typeの参照先がありません: ${quiz.videoId}',
+            );
           }
           final comments = quiz.comments
               .map(

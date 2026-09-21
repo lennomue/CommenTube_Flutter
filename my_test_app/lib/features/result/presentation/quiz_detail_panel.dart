@@ -6,8 +6,11 @@ import '../../../core/models/favorite.dart';
 import '../../../core/models/quiz.dart';
 import '../../../core/repositories/favorite_providers.dart';
 import '../../../core/repositories/quiz_providers.dart';
+import '../../../core/repositories/quiz_history_providers.dart';
 import '../../../core/utils/display_formatters.dart';
 import '../../../core/utils/youtube_link.dart';
+import '../../../core/widgets/minimizable_page_surface.dart';
+import '../../../core/widgets/quiz_song_tile.dart';
 
 class QuizDetailPanel extends ConsumerWidget {
   const QuizDetailPanel({
@@ -16,12 +19,22 @@ class QuizDetailPanel extends ConsumerWidget {
     required this.leading,
     this.bottomPadding = 24,
     this.onArtistOpen,
+    this.onQuizOpen,
+    this.minimizeController,
+    this.onMinimize,
+    this.bodyOverlay,
+    this.animateFromMinimized = false,
   });
 
   final QuizWithLiveStats quiz;
   final Widget leading;
   final double bottomPadding;
   final ValueChanged<String>? onArtistOpen;
+  final ValueChanged<String>? onQuizOpen;
+  final MinimizablePageController? minimizeController;
+  final VoidCallback? onMinimize;
+  final Widget? bodyOverlay;
+  final bool animateFromMinimized;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,8 +52,8 @@ class QuizDetailPanel extends ConsumerWidget {
       title: data.title,
     );
 
-    return DefaultTabController(
-      length: 4,
+    final top = ColoredBox(
+      color: const Color(0xFF090909),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -79,9 +92,19 @@ class QuizDetailPanel extends ConsumerWidget {
                 ),
                 _FavoriteIconButton(
                   key: ValueKey('favorite-song-${data.videoId}'),
-                  tooltip: '楽曲をお気に入り',
+                  tooltip: '作品をお気に入り',
                   selected: favoriteIds.contains(songFavorite.id),
                   onPressed: () => _toggleFavorite(ref, songFavorite),
+                ),
+                IconButton(
+                  key: ValueKey('detail-playlist-${data.videoId}'),
+                  tooltip: '再生リストに追加',
+                  onPressed: () => showAddToPlaylistSheet(
+                    context,
+                    ref,
+                    videoId: data.videoId,
+                  ),
+                  icon: const Icon(Icons.bookmark_add_outlined),
                 ),
               ],
             ),
@@ -118,86 +141,105 @@ class QuizDetailPanel extends ConsumerWidget {
           _ResultStats(quiz: quiz),
           const SizedBox(height: 6),
           const TabBar(
+            key: ValueKey('result-detail-tabs'),
+            indicatorSize: TabBarIndicatorSize.tab,
             tabs: [
               Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'コメント'),
               Tab(icon: Icon(Icons.music_note_rounded), text: '歌詞'),
-              Tab(icon: Icon(Icons.info_outline_rounded), text: '楽曲情報'),
+              Tab(icon: Icon(Icons.info_outline_rounded), text: '作品情報'),
               Tab(icon: Icon(Icons.link_rounded), text: '関連'),
             ],
           ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _DetailList(
-                  bottomPadding: bottomPadding,
-                  children: [
-                    for (final comment in quiz.comments)
-                      _FavoriteCard(
-                        text: comment.comment.content,
-                        footer:
-                            '♡ ${formatCompactCount(comment.likeCount)}  ${formatRelativeDate(comment.comment.commentedAt)}',
-                        favorite: SavedFavorite.comment(
-                          videoId: data.videoId,
-                          commentId: comment.comment.commentId,
-                          content: comment.comment.content,
-                        ),
-                        favoriteIds: favoriteIds,
-                        buttonKey:
-                            'favorite-comment-${comment.comment.commentId}',
-                        onFavorite: (favorite) =>
-                            _toggleFavorite(ref, favorite),
-                      ),
-                  ],
-                ),
-                _DetailList(
-                  bottomPadding: bottomPadding,
-                  children: [
-                    for (final indexed in data.musicLyrics.indexed)
-                      _FavoriteCard(
-                        text: indexed.$2,
-                        favorite: SavedFavorite.lyric(
-                          videoId: data.videoId,
-                          index: indexed.$1,
-                          content: indexed.$2,
-                        ),
-                        favoriteIds: favoriteIds,
-                        buttonKey: 'favorite-lyric-${indexed.$1}',
-                        onFavorite: (favorite) =>
-                            _toggleFavorite(ref, favorite),
-                      ),
-                  ],
-                ),
-                _DetailList(
-                  bottomPadding: bottomPadding,
-                  children: [
-                    _InfoCard(
-                      label: 'ジャンル',
-                      value: data.contentGenres.map(genreLabel).join(' / '),
-                    ),
-                    _InfoCard(
-                      label: '動画種別',
-                      value: videoGenreLabel(data.videoGenre),
-                    ),
-                    _InfoCard(
-                      label: '言語',
-                      value: data.languages.map(languageLabel).join(' / '),
-                    ),
-                    _InfoCard(
-                      label: 'リリース',
-                      value: formatPartialDate(data.musicReleasedAt),
-                    ),
-                  ],
-                ),
-                _RelatedVideosTab(
-                  relations: data.relatedVideos,
-                  allQuizzes: allQuizzes,
-                  bottomPadding: bottomPadding,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
+    );
+    final tabBody = TabBarView(
+      children: [
+        _DetailList(
+          bottomPadding: bottomPadding,
+          children: [
+            for (final comment in quiz.comments)
+              _FavoriteCard(
+                text: comment.comment.content,
+                footer:
+                    '♡ ${formatCompactCount(comment.likeCount)}  ${formatRelativeDate(comment.comment.commentedAt)}',
+                favorite: SavedFavorite.comment(
+                  videoId: data.videoId,
+                  commentId: comment.comment.commentId,
+                  content: comment.comment.content,
+                ),
+                favoriteIds: favoriteIds,
+                buttonKey: 'favorite-comment-${comment.comment.commentId}',
+                onFavorite: (favorite) => _toggleFavorite(ref, favorite),
+              ),
+          ],
+        ),
+        _DetailList(
+          bottomPadding: bottomPadding,
+          children: [
+            for (final indexed in data.musicLyrics.indexed)
+              _FavoriteCard(
+                text: indexed.$2,
+                favorite: SavedFavorite.lyric(
+                  videoId: data.videoId,
+                  index: indexed.$1,
+                  content: indexed.$2,
+                ),
+                favoriteIds: favoriteIds,
+                buttonKey: 'favorite-lyric-${indexed.$1}',
+                onFavorite: (favorite) => _toggleFavorite(ref, favorite),
+              ),
+          ],
+        ),
+        _DetailList(
+          bottomPadding: bottomPadding,
+          children: [
+            _InfoCard(
+              label: 'ジャンル',
+              value: data.contentGenres.map(genreLabel).join(' / '),
+            ),
+            _InfoCard(label: '動画種別', value: videoGenreLabel(data.videoGenre)),
+            _InfoCard(
+              label: '言語',
+              value: data.languages.map(languageLabel).join(' / '),
+            ),
+            _InfoCard(
+              label: 'リリース',
+              value: formatPartialDate(data.musicReleasedAt),
+            ),
+          ],
+        ),
+        _RelatedVideosTab(
+          relations: data.relatedVideos,
+          allQuizzes: allQuizzes,
+          bottomPadding: bottomPadding,
+          onQuizOpen: onQuizOpen,
+        ),
+      ],
+    );
+    final body = ColoredBox(
+      color: const Color(0xFF090909),
+      child: bodyOverlay == null
+          ? tabBody
+          : Stack(children: [tabBody, bodyOverlay!]),
+    );
+    return DefaultTabController(
+      length: 4,
+      child: minimizeController == null
+          ? Column(
+              children: [
+                top,
+                Expanded(child: body),
+              ],
+            )
+          : MinimizablePageSurface(
+              controller: minimizeController!,
+              top: top,
+              body: body,
+              topHeight: 348,
+              onMinimize: onMinimize!,
+              animateFromMinimized: animateFromMinimized,
+            ),
     );
   }
 
@@ -206,11 +248,12 @@ class QuizDetailPanel extends ConsumerWidget {
   }
 }
 
-class _RelatedVideosTab extends StatelessWidget {
+class _RelatedVideosTab extends ConsumerWidget {
   const _RelatedVideosTab({
     required this.relations,
     required this.allQuizzes,
     required this.bottomPadding,
+    required this.onQuizOpen,
   });
 
   static const _relationOrder = ['same_music', 'seriese', 'cover', 'part_of'];
@@ -218,9 +261,17 @@ class _RelatedVideosTab extends StatelessWidget {
   final List<RelatedVideo> relations;
   final List<QuizWithLiveStats> allQuizzes;
   final double bottomPadding;
+  final ValueChanged<String>? onQuizOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seenIds =
+        ref
+            .watch(quizHistoryProvider)
+            .value
+            ?.map((item) => item.videoId)
+            .toSet() ??
+        const <String>{};
     final quizzesById = {
       for (final quiz in allQuizzes) quiz.quiz.videoId: quiz,
     };
@@ -241,7 +292,7 @@ class _RelatedVideosTab extends StatelessWidget {
     }
     return ListView(
       key: const ValueKey('related-videos-list'),
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
       children: [
         for (final type in visibleTypes) ...[
           Padding(
@@ -256,7 +307,23 @@ class _RelatedVideosTab extends StatelessWidget {
             ),
           ),
           for (final related in grouped[type]!)
-            _RelatedVideoCard(quiz: related),
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              decoration: !seenIds.contains(related.quiz.videoId)
+                  ? const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Color(0x663BA7FF), width: 2),
+                      ),
+                    )
+                  : null,
+              child: QuizSongTile(
+                key: ValueKey('related-video-${related.quiz.videoId}'),
+                quiz: related,
+                onOpen: onQuizOpen == null
+                    ? () {}
+                    : () => onQuizOpen!(related.quiz.videoId),
+              ),
+            ),
           const SizedBox(height: 8),
         ],
       ],
@@ -271,43 +338,6 @@ class _RelatedVideosTab extends StatelessWidget {
       'part_of' => 'MAD・構成元',
       _ => type,
     };
-  }
-}
-
-class _RelatedVideoCard extends StatelessWidget {
-  const _RelatedVideoCard({required this.quiz});
-
-  final QuizWithLiveStats quiz;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: ValueKey('related-video-${quiz.quiz.videoId}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1C),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF303030)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            quiz.quiz.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '${formatCompactCount(quiz.videoStats.viewCount)}回視聴 ・ '
-            '${formatRelativeDate(quiz.quiz.postedAt)}',
-            style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -482,7 +512,7 @@ class _FavoriteIconButton extends StatelessWidget {
       tooltip: tooltip,
       onPressed: onPressed,
       icon: Icon(
-        selected ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+        selected ? Icons.favorite_rounded : Icons.favorite_border_rounded,
       ),
     );
   }
@@ -583,8 +613,8 @@ class _FavoriteCard extends StatelessWidget {
                 onPressed: () => onFavorite(favorite),
                 icon: Icon(
                   favoriteIds.contains(favorite.id)
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
                 ),
               ),
             ],

@@ -8,9 +8,8 @@ import '../../../core/repositories/favorite_providers.dart';
 import '../../../core/repositories/quiz_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/state/quiz_experience_controller.dart';
-import '../../../core/utils/display_formatters.dart';
-
-enum _SongOrder { views, newest, oldest }
+import '../../../core/widgets/quiz_song_tile.dart';
+import '../../../core/widgets/work_collection_toolbar.dart';
 
 class ArtistScreen extends ConsumerStatefulWidget {
   const ArtistScreen({super.key, required this.artist});
@@ -22,8 +21,8 @@ class ArtistScreen extends ConsumerStatefulWidget {
 }
 
 class _ArtistScreenState extends ConsumerState<ArtistScreen> {
-  String _query = '';
-  _SongOrder _order = _SongOrder.views;
+  QuizFilter _workFilter = QuizFilter.empty;
+  WorkOrder _workOrder = WorkOrder.views;
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +37,12 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
             .toSet() ??
         const <String>{};
     final artistFavorite = SavedFavorite.artist(widget.artist);
+    final relatedArtists = ref.watch(relatedArtistsProvider(widget.artist));
 
     return Scaffold(
       body: SafeArea(
         child: DefaultTabController(
-          length: 2,
+          length: 3,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -85,13 +85,30 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
                 child: quizzes.when(
-                  data: (items) => FilledButton.icon(
-                    key: const ValueKey('start-artist-quiz'),
-                    onPressed: items.isEmpty
-                        ? null
-                        : () => _startArtistQuiz(items),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('このアーティストのクイズを始める'),
+                  data: (items) => Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          key: const ValueKey('start-artist-quiz'),
+                          onPressed: items.isEmpty
+                              ? null
+                              : () => _startArtistQuiz(items),
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('クイズを始める'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      IconButton.filled(
+                        key: const ValueKey('shuffle-artist-quiz'),
+                        tooltip: 'シャッフル再生',
+                        onPressed: items.length < 2
+                            ? null
+                            : () => _startArtistQuiz(
+                                List<QuizWithLiveStats>.of(items)..shuffle(),
+                              ),
+                        icon: const Icon(Icons.shuffle_rounded),
+                      ),
+                    ],
                   ),
                   loading: () => const LinearProgressIndicator(),
                   error: (error, stackTrace) => const Text('問題を読み込めませんでした'),
@@ -100,7 +117,8 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
               const TabBar(
                 tabs: [
                   Tab(icon: Icon(Icons.grid_view_rounded), text: 'クイズ'),
-                  Tab(icon: Icon(Icons.queue_music_rounded), text: '楽曲'),
+                  Tab(icon: Icon(Icons.queue_music_rounded), text: '作品'),
+                  Tab(icon: Icon(Icons.people_outline_rounded), text: '関連'),
                 ],
               ),
               Expanded(
@@ -112,14 +130,24 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
                         onQuizSelected: _openSingleQuiz,
                       ),
                       _ArtistSongList(
-                        quizzes: _filteredAndSorted(items),
-                        query: _query,
-                        order: _order,
-                        onQueryChanged: (value) =>
-                            setState(() => _query = value),
+                        quizzes: items,
+                        filter: _workFilter,
+                        order: _workOrder,
+                        onFilterChanged: (value) =>
+                            setState(() => _workFilter = value),
                         onOrderChanged: (value) =>
-                            setState(() => _order = value),
+                            setState(() => _workOrder = value),
                         onQuizSelected: _openSingleQuiz,
+                      ),
+                      relatedArtists.when(
+                        data: (artists) => _RelatedArtistsList(
+                          artists: artists,
+                          onOpen: context.openArtist,
+                        ),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, stackTrace) =>
+                            const Center(child: Text('関連を読み込めませんでした')),
                       ),
                     ],
                   ),
@@ -136,37 +164,19 @@ class _ArtistScreenState extends ConsumerState<ArtistScreen> {
     );
   }
 
-  List<QuizWithLiveStats> _filteredAndSorted(List<QuizWithLiveStats> source) {
-    final query = _query.trim().toLowerCase();
-    final result = source
-        .where(
-          (item) =>
-              query.isEmpty || item.quiz.title.toLowerCase().contains(query),
-        )
-        .toList(growable: false);
-    result.sort((left, right) {
-      return switch (_order) {
-        _SongOrder.views => right.videoStats.viewCount.compareTo(
-          left.videoStats.viewCount,
-        ),
-        _SongOrder.newest => right.quiz.postedAt.compareTo(left.quiz.postedAt),
-        _SongOrder.oldest => left.quiz.postedAt.compareTo(right.quiz.postedAt),
-      };
-    });
-    return result;
-  }
-
   void _startArtistQuiz(List<QuizWithLiveStats> quizzes) {
     final videoIds = quizzes
         .map((item) => item.quiz.videoId)
         .toList(growable: false);
     ref.read(artistQuizSessionProvider.notifier).start(widget.artist, videoIds);
+    ref.read(playlistQuizSessionProvider.notifier).clear();
     ref.read(minimizedQuizExperienceProvider.notifier).clear();
     context.openGame(videoIds.first);
   }
 
   void _openSingleQuiz(String videoId) {
     ref.read(artistQuizSessionProvider.notifier).clear();
+    ref.read(playlistQuizSessionProvider.notifier).clear();
     ref.read(minimizedQuizExperienceProvider.notifier).clear();
     context.openGame(videoId);
   }
@@ -194,28 +204,55 @@ class _ArtistQuizGrid extends StatelessWidget {
       itemCount: quizzes.length,
       itemBuilder: (context, index) {
         final quiz = quizzes[index];
+        final atmosphere = quiz.quiz.atmosphereColor;
+        final baseColor = HSLColor.fromAHSL(
+          1,
+          atmosphere.hue,
+          atmosphere.saturation.clamp(0, 1).toDouble(),
+          atmosphere.lightness.clamp(0, 1).toDouble(),
+        );
         return Material(
-          color: const Color(0xFF1A1A1A),
+          color: baseColor.toColor(),
           borderRadius: BorderRadius.circular(16),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             key: ValueKey('artist-quiz-${quiz.quiz.videoId}'),
             onTap: () => onQuizSelected(quiz.quiz.videoId),
             child: DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  colors: [Color(0xFF565656), Color(0xFF111111)],
+                  colors: [
+                    baseColor
+                        .withLightness(
+                          (baseColor.lightness + 0.22).clamp(0, 1).toDouble(),
+                        )
+                        .toColor(),
+                    baseColor.toColor(),
+                  ],
                 ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Center(
-                  child: Text(
-                    quiz.quiz.thumbnailHint?.content ?? 'ヒントはありません',
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        quiz.quiz.thumbnailHintType == ThumbnailHintType.lyric
+                            ? Icons.music_note_rounded
+                            : Icons.chat_bubble_outline_rounded,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        quiz.quiz.thumbnailHint?.content ?? 'ヒントはありません',
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -227,95 +264,127 @@ class _ArtistQuizGrid extends StatelessWidget {
   }
 }
 
-class _ArtistSongList extends StatelessWidget {
+class _ArtistSongList extends ConsumerWidget {
   const _ArtistSongList({
     required this.quizzes,
-    required this.query,
+    required this.filter,
     required this.order,
-    required this.onQueryChanged,
+    required this.onFilterChanged,
     required this.onOrderChanged,
     required this.onQuizSelected,
   });
 
   final List<QuizWithLiveStats> quizzes;
-  final String query;
-  final _SongOrder order;
-  final ValueChanged<String> onQueryChanged;
-  final ValueChanged<_SongOrder> onOrderChanged;
+  final QuizFilter filter;
+  final WorkOrder order;
+  final ValueChanged<QuizFilter> onFilterChanged;
+  final ValueChanged<WorkOrder> onOrderChanged;
   final ValueChanged<String> onQuizSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final works =
+        quizzes
+            .where((item) => _matchesArtistWorkFilter(item.quiz, filter))
+            .toList()
+          ..sort(
+            (left, right) => switch (order) {
+              WorkOrder.views => right.videoStats.viewCount.compareTo(
+                left.videoStats.viewCount,
+              ),
+              WorkOrder.newest => right.quiz.postedAt.compareTo(
+                left.quiz.postedAt,
+              ),
+              WorkOrder.oldest => left.quiz.postedAt.compareTo(
+                right.quiz.postedAt,
+              ),
+            },
+          );
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('artist-song-search'),
-                  onChanged: onQueryChanged,
-                  decoration: const InputDecoration(
-                    hintText: '曲名を検索',
-                    prefixIcon: Icon(Icons.search_rounded),
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(14)),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+        WorkCollectionToolbar(
+          key: const ValueKey('artist-work-toolbar'),
+          filter: filter,
+          order: order,
+          onFilterChanged: onFilterChanged,
+          onOrderChanged: onOrderChanged,
+          onBulkAdd: works.isEmpty
+              ? null
+              : () => showBatchPlaylistSheet(
+                  context,
+                  ref,
+                  videoIds: works
+                      .map((item) => item.quiz.videoId)
+                      .toList(growable: false),
                 ),
-              ),
-              const SizedBox(width: 10),
-              DropdownButton<_SongOrder>(
-                key: const ValueKey('artist-song-order'),
-                value: order,
-                underline: const SizedBox.shrink(),
-                onChanged: (value) {
-                  if (value != null) {
-                    onOrderChanged(value);
-                  }
-                },
-                items: const [
-                  DropdownMenuItem(value: _SongOrder.views, child: Text('再生順')),
-                  DropdownMenuItem(
-                    value: _SongOrder.newest,
-                    child: Text('新しい順'),
-                  ),
-                  DropdownMenuItem(
-                    value: _SongOrder.oldest,
-                    child: Text('古い順'),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
         Expanded(
-          child: quizzes.isEmpty
-              ? Center(child: Text(query.isEmpty ? '楽曲がありません' : '該当する楽曲がありません'))
-              : ListView.separated(
+          child: works.isEmpty
+              ? const Center(child: Text('条件に合う作品がありません'))
+              : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
-                  itemCount: quizzes.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemCount: works.length,
                   itemBuilder: (context, index) {
-                    final quiz = quizzes[index];
-                    return ListTile(
-                      key: ValueKey('artist-song-${quiz.quiz.videoId}'),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      onTap: () => onQuizSelected(quiz.quiz.videoId),
-                      title: Text(quiz.quiz.title),
-                      subtitle: Text(
-                        '${formatCompactCount(quiz.videoStats.viewCount)}回視聴 ・ '
-                        '${formatRelativeDate(quiz.quiz.postedAt)}',
+                    final quiz = works[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: QuizSongTile(
+                        key: ValueKey('artist-song-${quiz.quiz.videoId}'),
+                        quiz: quiz,
+                        onOpen: () => onQuizSelected(quiz.quiz.videoId),
                       ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
                     );
                   },
                 ),
         ),
       ],
+    );
+  }
+}
+
+bool _matchesArtistWorkFilter(Quiz quiz, QuizFilter filter) {
+  return (filter.contentGenres.isEmpty ||
+          quiz.contentGenres.any(filter.contentGenres.contains)) &&
+      (filter.languages.isEmpty ||
+          quiz.languages.any(filter.languages.contains)) &&
+      (filter.videoGenres.isEmpty ||
+          filter.videoGenres.contains(quiz.videoGenre)) &&
+      (filter.publishedFromYear == null ||
+          quiz.postedAt.year >= filter.publishedFromYear!) &&
+      (filter.publishedToYear == null ||
+          quiz.postedAt.year <= filter.publishedToYear!);
+}
+
+class _RelatedArtistsList extends StatelessWidget {
+  const _RelatedArtistsList({required this.artists, required this.onOpen});
+
+  final List<Artist> artists;
+  final ValueChanged<String> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (artists.isEmpty) {
+      return const Center(child: Text('関連アーティストはまだありません'));
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      itemCount: artists.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final artist = artists[index];
+        return Material(
+          color: const Color(0xFF1C1C1C),
+          borderRadius: BorderRadius.circular(14),
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            key: ValueKey('related-artist-${artist.artistId}'),
+            leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
+            title: Text(artist.name),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => onOpen(artist.name),
+          ),
+        );
+      },
     );
   }
 }

@@ -4,7 +4,9 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_test_app/core/database/app_database.dart';
 import 'package:my_test_app/core/models/favorite.dart';
+import 'package:my_test_app/core/models/playlist.dart';
 import 'package:my_test_app/core/repositories/favorite_repository.dart';
+import 'package:my_test_app/core/repositories/playlist_repository.dart';
 import 'package:my_test_app/core/repositories/quiz_history_repository.dart';
 
 void main() {
@@ -96,5 +98,108 @@ void main() {
     expect(history.map((item) => item.videoId), isNot(contains('video-0')));
     expect(history.map((item) => item.videoId), isNot(contains('video-1')));
     expect(history.where((item) => item.videoId == 'video-2'), hasLength(1));
+  });
+
+  test('再生リストの設定・楽曲・並び順をDriftに保持する', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'commentube_playlists_',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final file = File('${directory.path}/playlists.sqlite');
+
+    final firstDatabase = AppDatabase(NativeDatabase(file));
+    final firstRepository = DriftPlaylistRepository(firstDatabase);
+    final playlistId = await firstRepository.createPlaylist(
+      const PlaylistDraft(name: 'テストリスト', isPublic: false),
+      firstVideoId: 'video-1',
+    );
+    await firstRepository.toggleVideo(playlistId, 'video-2');
+    await firstRepository.reorderVideos(playlistId, const [
+      'video-2',
+      'video-1',
+    ]);
+    await firstRepository.updatePlaylist(
+      playlistId,
+      const PlaylistDraft(
+        name: '更新後リスト',
+        isPublic: true,
+        description: '説明文',
+        allowsCollaboration: true,
+      ),
+    );
+    await firstDatabase.close();
+
+    final reopenedDatabase = AppDatabase(NativeDatabase(file));
+    addTearDown(reopenedDatabase.close);
+    final reopenedRepository = DriftPlaylistRepository(reopenedDatabase);
+    final playlist = (await reopenedRepository.watchPlaylists().first)
+        .singleWhere((item) => item.id == playlistId);
+
+    expect(playlist.name, '更新後リスト');
+    expect(playlist.isPublic, isTrue);
+    expect(playlist.description, '説明文');
+    expect(playlist.allowsCollaboration, isTrue);
+    expect(playlist.videoIds, ['video-2', 'video-1']);
+
+    await reopenedRepository.toggleVideo(playlistId, 'video-1');
+    expect(
+      (await reopenedRepository.watchPlaylists().first)
+          .singleWhere((item) => item.id == playlistId)
+          .videoIds,
+      ['video-2'],
+    );
+
+    final copiedId = await reopenedRepository.copyPlaylist(
+      UserPlaylist(
+        id: 'public-source',
+        name: '公開リスト',
+        isPublic: true,
+        description: '公開データ',
+        allowsCollaboration: false,
+        isOwned: false,
+        videoIds: const ['video-3'],
+        createdAt: DateTime.utc(2026, 9, 1),
+        updatedAt: DateTime.utc(2026, 9, 2),
+      ),
+    );
+    final copied = (await reopenedRepository.watchPlaylists().first)
+        .singleWhere((item) => item.id == copiedId);
+    expect(copied.sourcePlaylistId, 'public-source');
+    expect(copied.isSavedCopy, isTrue);
+
+    await reopenedRepository.reorderVideos(playlistId, const []);
+    final emptied = (await reopenedRepository.watchPlaylists().first)
+        .singleWhere((item) => item.id == playlistId);
+    expect(emptied.videoIds, isEmpty);
+  });
+
+  test('複数作品を表示順のまま追加し別の再生リストへ移動する', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = DriftPlaylistRepository(database);
+
+    expect(await repository.watchPlaylists().first, isEmpty);
+    final sourceId = await repository.createPlaylist(
+      const PlaylistDraft(name: '移動元', isPublic: false),
+    );
+    final targetId = await repository.createPlaylist(
+      const PlaylistDraft(name: '移動先', isPublic: false),
+    );
+    await repository.addVideos(sourceId, const ['video-2', 'video-1']);
+    await repository.moveVideos(
+      sourcePlaylistId: sourceId,
+      targetPlaylistId: targetId,
+      videoIds: const ['video-2', 'video-1'],
+    );
+
+    final playlists = await repository.watchPlaylists().first;
+    expect(
+      playlists.singleWhere((item) => item.id == sourceId).videoIds,
+      isEmpty,
+    );
+    expect(playlists.singleWhere((item) => item.id == targetId).videoIds, [
+      'video-2',
+      'video-1',
+    ]);
   });
 }

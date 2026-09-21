@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router/app_router.dart';
+import '../state/fullscreen_edit_controller.dart';
+import '../state/home_scroll_controller.dart';
 import '../state/quiz_experience_controller.dart';
 
 class AppNavigationScaffold extends ConsumerWidget {
@@ -12,36 +14,78 @@ class AppNavigationScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final minimized = ref.watch(minimizedQuizExperienceProvider);
+    final homeScrollController = ref.watch(homeScrollControllerProvider);
+    final isFullscreenEdit = ref.watch(fullscreenEditProvider);
     return Scaffold(
-      body: Stack(
-        children: [
-          navigationShell,
-          if (minimized != null)
-            Positioned(
-              right: 16,
-              bottom: 14,
-              child: _MinimizedExperienceButton(
-                experience: minimized,
-                onPressed: () {
-                  ref.read(minimizedQuizExperienceProvider.notifier).clear();
-                  switch (minimized.kind) {
-                    case QuizExperienceKind.game:
-                      context.openGame(minimized.videoId);
-                    case QuizExperienceKind.result:
-                      context.openResult(minimized.videoId);
+      body: isFullscreenEdit
+          ? navigationShell
+          : MinimizedExperienceOverlay(bottom: 14, child: navigationShell),
+      bottomNavigationBar: isFullscreenEdit
+          ? null
+          : AppNavigationBar(
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: (index) {
+                final isHomeRoot = GoRouterState.of(context).uri.path == '/';
+                if (index == 0 &&
+                    navigationShell.currentIndex == 0 &&
+                    isHomeRoot) {
+                  if (homeScrollController.hasClients) {
+                    homeScrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 320),
+                      curve: Curves.easeOutCubic,
+                    );
                   }
-                },
-              ),
+                  return;
+                }
+                navigationShell.goBranch(index, initialLocation: true);
+              },
             ),
-        ],
-      ),
-      bottomNavigationBar: AppNavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(index, initialLocation: true);
-        },
-      ),
+    );
+  }
+}
+
+class MinimizedExperienceOverlay extends ConsumerWidget {
+  const MinimizedExperienceOverlay({
+    super.key,
+    required this.child,
+    this.bottom = 14,
+  });
+
+  final Widget child;
+  final double bottom;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final minimized = ref.watch(minimizedQuizExperienceProvider);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        if (minimized != null)
+          Positioned(
+            right: 16,
+            bottom: bottom,
+            child: _MinimizedExperienceButton(
+              experience: minimized,
+              onPressed: () {
+                ref.read(minimizedQuizExperienceProvider.notifier).clear();
+                switch (minimized.kind) {
+                  case QuizExperienceKind.game:
+                    context.openGame(
+                      minimized.videoId,
+                      transition: QuizPageTransition.restoreFromMinimized,
+                    );
+                  case QuizExperienceKind.result:
+                    context.openResult(
+                      minimized.videoId,
+                      transition: QuizPageTransition.restoreFromMinimized,
+                    );
+                }
+              },
+            ),
+          ),
+      ],
     );
   }
 }

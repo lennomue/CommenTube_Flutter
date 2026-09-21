@@ -1,11 +1,11 @@
 {
-    "name": "my_test_app",
-    "short_name": "my_test_app",
+    "name": "CommenTube",
+    "short_name": "CommenTube",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "YouTube動画をコメントなどのヒントから当てるCommenTubeアプリ。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

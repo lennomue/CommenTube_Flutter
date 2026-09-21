@@ -1,30 +1,41 @@
-Bundle Identifier：com.lennomue.commentubedemo
-# 実行の仕方
+# CommenTube
+
+YouTube動画を、コメント・歌詞・作品情報などのヒントから当てるFlutterアプリです。
+
+- 現在仕様: `spec/spec.md`
+- 開発過程・残作業: `spec/plan.md`
+- コミット単位の変更記録: `spec/_commit.md`
+- データ作成ツール: `_YouTube_Data_API/README.md`
+
+Bundle Identifier：`com.lennomue.commentubedemo`
+
+## 実機での実行
+
+```sh
 cd /Users/lennomue/Dev/CommenTube/my_test_app
-<!-- flutter コマンドを使用可能に -->
 export PATH="/Users/lennomue/develop/flutter/bin:$PATH"
-<!-- 実行可能かの検査をする。iOS関連でチェックが出ればOK -->
 flutter doctor
-<!-- いざ実行、usbを繋いで実機でテスト -->
 flutter run
+```
+
 軽微な修正はコードを編集してからターミナルで`r` -> リロード、`R`で再起動
 なお、`d`で切り離し、スマホ本体にアプリが残る
 
 
-<!-- 以下初めのテストの時のやり方 -->
-<!-- Xcodeを入れる前のMacは、参照先が「Command Line Tools（単体版）」という機能が制限された場所にセットされていたので、次ので参照先を変更 -->
+## iOS初回セットアップの記録
+
+Xcode導入前のMacで参照先がCommand Line Tools単体版になっている場合だけ実行します。
+
+```sh
 sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-<!-- 初回ライセンスの同意とツール初期化 -->
+# 初回ライセンスの同意とツール初期化
 sudo xcodebuild -runFirstLaunch
-<!-- CocoaPods（iOSライブラリ管理ツール、FlutterでiOSアプリをビルドする際に必要なツール）の導入 -->
+# CocoaPodsの導入
 sudo gem install cocoapods
-<!-- 上のコマンドを実行すると次のように返ってくる(アップデートコマンドの案内など) -->
-A new release of RubyGems is available: 3.5.9 → 4.0.17!
-Run `gem update --system 4.0.17` to update your installation.
+```
 
 Xcodeを開いて(ターミナルで`open ios/Runner.xcworkspace`)プロジェクトの設定としてAppleアカウントの初期設定をする。
 iPhoneの「設定」-> 「プライバシーとセキュリティ」→「デベロッパモード」を有効にする
 iPhoneの「一般」-> 「VPNとデバイス管理」で信頼
 
-iPhoneに繋いでアプリが立ち上がりテストができた！
--> ターミナル
+iPhoneに接続後、VS Codeまたは`flutter run`から実機テストします。

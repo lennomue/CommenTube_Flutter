@@ -9,17 +9,20 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import '../../../core/utils/youtube_url.dart';
 
 class AnswerWebViewScreen extends StatefulWidget {
-  const AnswerWebViewScreen({super.key, required this.videoId});
+  const AnswerWebViewScreen({
+    super.key,
+    required this.videoId,
+    required this.searchQuery,
+  });
 
   final String videoId;
+  final String searchQuery;
 
   @override
   State<AnswerWebViewScreen> createState() => _AnswerWebViewScreenState();
 }
 
 class _AnswerWebViewScreenState extends State<AnswerWebViewScreen> {
-  static final Uri _youtubeHomeUrl = Uri.https('m.youtube.com', '/');
-
   late final WebViewController _controller;
   String? _currentUrl;
   int _progress = 0;
@@ -98,7 +101,11 @@ class _AnswerWebViewScreenState extends State<AnswerWebViewScreen> {
     }
 
     _controller = controller;
-    unawaited(_controller.loadRequest(_youtubeHomeUrl));
+    final query = widget.searchQuery.trim();
+    final initialUrl = query.isEmpty
+        ? Uri.https('m.youtube.com', '/')
+        : Uri.https('m.youtube.com', '/results', {'search_query': query});
+    unawaited(_controller.loadRequest(initialUrl));
   }
 
   bool get _isWatchPage => isYouTubeWatchUrl(_currentUrl);

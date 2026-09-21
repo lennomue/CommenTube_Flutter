@@ -105,8 +105,12 @@ class _QuickFilterChip extends StatelessWidget {
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         key: ValueKey('quick-filter-$filterKey'),
-        label: Text(label),
+        label: Text(
+          label,
+          style: TextStyle(color: selected ? Colors.black : Colors.white),
+        ),
         selected: selected,
+        selectedColor: Colors.white,
         onSelected: (_) => onSelected(),
       ),
     );
@@ -115,27 +119,35 @@ class _QuickFilterChip extends StatelessWidget {
 
 Future<QuizFilter?> showDetailedQuizFilters(
   BuildContext context,
-  QuizFilter initialFilter,
-) {
+  QuizFilter initialFilter, {
+  ValueChanged<QuizFilter>? onChanged,
+}) {
   return showModalBottomSheet<QuizFilter>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (context) => _DetailedFilterSheet(initialFilter: initialFilter),
+    builder: (context) => _DetailedFilterSheet(
+      initialFilter: initialFilter,
+      onChanged: onChanged,
+    ),
   );
 }
 
 class _DetailedFilterSheet extends StatefulWidget {
-  const _DetailedFilterSheet({required this.initialFilter});
+  const _DetailedFilterSheet({
+    required this.initialFilter,
+    required this.onChanged,
+  });
 
   final QuizFilter initialFilter;
+  final ValueChanged<QuizFilter>? onChanged;
 
   @override
   State<_DetailedFilterSheet> createState() => _DetailedFilterSheetState();
 }
 
 class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
-  static const _minimumYear = 1950.0;
+  static const _minimumYear = 2005.0;
   static const _maximumYear = 2029.0;
 
   late QuizFilter _filter;
@@ -149,8 +161,14 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
     _usesPublishedYears =
         _filter.publishedFromYear != null || _filter.publishedToYear != null;
     _publishedYears = RangeValues(
-      (_filter.publishedFromYear ?? _minimumYear.toInt()).toDouble(),
-      (_filter.publishedToYear ?? _maximumYear.toInt()).toDouble(),
+      (_filter.publishedFromYear ?? _minimumYear.toInt()).toDouble().clamp(
+        _minimumYear,
+        _maximumYear,
+      ),
+      (_filter.publishedToYear ?? _maximumYear.toInt()).toDouble().clamp(
+        _minimumYear,
+        _maximumYear,
+      ),
     );
   }
 
@@ -187,23 +205,28 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
                   title: '内容ジャンル',
                   options: _musicGenreOptions,
                   selectedValues: _filter.contentGenres,
-                  onToggle: (value) => setState(
-                    () => _filter = _filter.toggleContentGenre(value),
-                  ),
+                  onToggle: (value) => setState(() {
+                    _filter = _filter.toggleContentGenre(value);
+                    widget.onChanged?.call(_filter);
+                  }),
                 ),
                 _FilterSection(
                   title: '言語',
                   options: _languageOptions,
                   selectedValues: _filter.languages,
-                  onToggle: (value) =>
-                      setState(() => _filter = _filter.toggleLanguage(value)),
+                  onToggle: (value) => setState(() {
+                    _filter = _filter.toggleLanguage(value);
+                    widget.onChanged?.call(_filter);
+                  }),
                 ),
                 _FilterSection(
                   title: '動画ジャンル',
                   options: _videoGenreOptions,
                   selectedValues: _filter.videoGenres,
-                  onToggle: (value) =>
-                      setState(() => _filter = _filter.toggleVideoGenre(value)),
+                  onToggle: (value) => setState(() {
+                    _filter = _filter.toggleVideoGenre(value);
+                    widget.onChanged?.call(_filter);
+                  }),
                 ),
                 const SizedBox(height: 8),
                 SwitchListTile(
@@ -217,6 +240,7 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
                     setState(() {
                       _usesPublishedYears = value;
                       _syncPublishedYears();
+                      widget.onChanged?.call(_filter);
                     });
                   },
                 ),
@@ -230,7 +254,7 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
                     values: _publishedYears,
                     min: _minimumYear,
                     max: _maximumYear,
-                    divisions: 79,
+                    divisions: 24,
                     labels: RangeLabels(
                       '${_publishedYears.start.round()}年',
                       '${_publishedYears.end.round()}年',
@@ -239,6 +263,7 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
                       setState(() {
                         _publishedYears = values;
                         _syncPublishedYears();
+                        widget.onChanged?.call(_filter);
                       });
                     },
                   ),
@@ -259,6 +284,7 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
                         _minimumYear,
                         _maximumYear,
                       );
+                      widget.onChanged?.call(_filter);
                     });
                   },
                   child: const Text('すべて解除'),
@@ -318,8 +344,16 @@ class _FilterSection extends StatelessWidget {
             children: [
               for (final option in options)
                 FilterChip(
-                  label: Text(option.label),
+                  label: Text(
+                    option.label,
+                    style: TextStyle(
+                      color: selectedValues.contains(option.value)
+                          ? Colors.black
+                          : Colors.white,
+                    ),
+                  ),
                   selected: selectedValues.contains(option.value),
+                  selectedColor: Colors.white,
                   onSelected: (_) => onToggle(option.value),
                 ),
             ],
@@ -345,7 +379,9 @@ const _languageOptions = [
 ];
 
 const _videoGenreOptions = [
-  _FilterOption('music_video', '楽曲'),
+  _FilterOption('release', '楽曲'),
+  _FilterOption('music_video', 'ミュージックビデオ'),
+  _FilterOption('cover_video', 'カバー動画'),
   _FilterOption('lyric_video', '歌詞動画'),
   _FilterOption('live_performance_video', 'ライブ映像'),
   _FilterOption('fan_made_video', '合成MAD'),

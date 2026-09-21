@@ -23,3 +23,14 @@ final quizProvider = FutureProvider.family<QuizWithLiveStats?, String>((
 ) {
   return ref.watch(quizRepositoryProvider).getQuiz(videoId);
 });
+
+final artistsProvider = FutureProvider<List<Artist>>((ref) {
+  return ref.watch(quizRepositoryProvider).getArtists();
+});
+
+final relatedArtistsProvider = FutureProvider.family<List<Artist>, String>((
+  ref,
+  artistName,
+) {
+  return ref.watch(quizRepositoryProvider).getRelatedArtists(artistName);
+});
