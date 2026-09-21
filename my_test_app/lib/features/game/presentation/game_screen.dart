@@ -685,7 +685,7 @@ class _FloatingGameActions extends StatelessWidget {
     final baseSize = compact ? 62.0 : 112.0;
     final answerSize =
         baseSize + (276 - baseSize) * openProgress - (45 * closeProgress);
-    final collapsedBottom = compact ? 12.0 : 24.0;
+    const collapsedBottom = 24.0;
     final answerBottom =
         collapsedBottom +
         ((22 - collapsedBottom) * openProgress) -
@@ -732,127 +732,143 @@ class _FloatingGameActions extends StatelessWidget {
                         children: [
                           Opacity(
                             opacity: (1 - openProgress * 1.6).clamp(0, 1),
-                            child: Transform.translate(
-                              offset: const Offset(0, -24),
-                              child: compact
-                                  ? const Icon(
-                                      Icons.keyboard_arrow_up_rounded,
-                                      color: Colors.black,
-                                      size: 34,
-                                    )
-                                  : const Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.keyboard_arrow_up_rounded,
+                            child: compact
+                                ? const Icon(
+                                    Icons.keyboard_arrow_up_rounded,
+                                    key: ValueKey('compact-answer-handle'),
+                                    color: Colors.black,
+                                    size: 32,
+                                  )
+                                : Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      const Text(
+                                        'ANSWER',
+                                        key: ValueKey('answer-label'),
+                                        style: TextStyle(
                                           color: Colors.black,
-                                          size: 34,
-                                        ),
-                                        Text(
-                                          'ANSWER',
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                          IgnorePointer(
-                            ignoring: !isInputOpen,
-                            child: Opacity(
-                              opacity: openProgress,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isInputOpen)
-                                      TextField(
-                                        key: const ValueKey(
-                                          'answer-search-field',
-                                        ),
-                                        controller: searchController,
-                                        focusNode: searchFocusNode,
-                                        textInputAction: TextInputAction.search,
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '検索ワード',
-                                          hintStyle: TextStyle(
-                                            color: Color(0xFF777777),
-                                          ),
-                                          filled: true,
-                                          fillColor: Color(0xFFD8D8D8),
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 10,
-                                          ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.all(
-                                              Radius.circular(22),
-                                            ),
-                                            borderSide: BorderSide.none,
-                                          ),
-                                        ),
-                                        onSubmitted: (_) {
-                                          if (searchController.text
-                                              .trim()
-                                              .isNotEmpty) {
-                                            onSearch();
-                                          }
-                                        },
-                                      )
-                                    else
-                                      Container(
-                                        height: 39,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD8D8D8),
-                                          borderRadius: BorderRadius.circular(
-                                            22,
-                                          ),
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.2,
                                         ),
                                       ),
-                                    const SizedBox(height: 8),
-                                    ValueListenableBuilder<TextEditingValue>(
-                                      valueListenable: searchController,
-                                      builder: (context, value, child) {
-                                        final enabled = value.text
-                                            .trim()
-                                            .isNotEmpty;
-                                        return IconButton(
-                                          key: const ValueKey(
-                                            'open-youtube-search',
+                                      Transform.translate(
+                                        offset: const Offset(0, -24),
+                                        child: const Icon(
+                                          Icons.keyboard_arrow_up_rounded,
+                                          color: Colors.black,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          if (openProgress > 0)
+                            IgnorePointer(
+                              ignoring: !isInputOpen,
+                              child: Opacity(
+                                opacity: openProgress,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: SizedBox(
+                                      width: 240,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isInputOpen)
+                                            TextField(
+                                              key: const ValueKey(
+                                                'answer-search-field',
+                                              ),
+                                              controller: searchController,
+                                              focusNode: searchFocusNode,
+                                              textInputAction:
+                                                  TextInputAction.search,
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                              decoration: const InputDecoration(
+                                                hintText: '検索ワード',
+                                                hintStyle: TextStyle(
+                                                  color: Color(0xFF777777),
+                                                ),
+                                                filled: true,
+                                                fillColor: Color(0xFFD8D8D8),
+                                                isDense: true,
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 10,
+                                                    ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                        Radius.circular(22),
+                                                      ),
+                                                  borderSide: BorderSide.none,
+                                                ),
+                                              ),
+                                              onSubmitted: (_) {
+                                                if (searchController.text
+                                                    .trim()
+                                                    .isNotEmpty) {
+                                                  onSearch();
+                                                }
+                                              },
+                                            )
+                                          else
+                                            Container(
+                                              height: 39,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFD8D8D8),
+                                                borderRadius:
+                                                    BorderRadius.circular(22),
+                                              ),
+                                            ),
+                                          const SizedBox(height: 8),
+                                          ValueListenableBuilder<
+                                            TextEditingValue
+                                          >(
+                                            valueListenable: searchController,
+                                            builder: (context, value, child) {
+                                              final enabled = value.text
+                                                  .trim()
+                                                  .isNotEmpty;
+                                              return IconButton(
+                                                key: const ValueKey(
+                                                  'open-youtube-search',
+                                                ),
+                                                tooltip: 'YouTubeで検索',
+                                                onPressed: enabled
+                                                    ? onSearch
+                                                    : null,
+                                                iconSize: 42,
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 48,
+                                                      minHeight: 42,
+                                                    ),
+                                                icon: Icon(
+                                                  Icons.smart_display_rounded,
+                                                  color: enabled
+                                                      ? const Color(0xFFFF0033)
+                                                      : const Color(0xFF343434),
+                                                ),
+                                              );
+                                            },
                                           ),
-                                          tooltip: 'YouTubeで検索',
-                                          onPressed: enabled ? onSearch : null,
-                                          iconSize: 42,
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(
-                                            minWidth: 48,
-                                            minHeight: 42,
-                                          ),
-                                          icon: Icon(
-                                            Icons.smart_display_rounded,
-                                            color: enabled
-                                                ? const Color(0xFFFF0033)
-                                                : const Color(0xFF343434),
-                                          ),
-                                        );
-                                      },
+                                        ],
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -862,8 +878,8 @@ class _FloatingGameActions extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 16,
-            bottom: 20,
+            right: 24,
+            bottom: 24,
             child: IgnorePointer(
               ignoring: openProgress > 0,
               child: AnimatedOpacity(

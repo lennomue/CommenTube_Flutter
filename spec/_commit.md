@@ -140,3 +140,13 @@
 - READMEと内容が重複していた`_YouTube_Data_API/.env.example`を削除
 - 必要な環境変数名、`.env`の作成場所、ファイル権限の設定を`_YouTube_Data_API/README.md`へ集約
 - 実キーを持つ`_YouTube_Data_API/.env`は引き続きGit対象外であることを確認
+
+## 2026-09-21: Playlist終了と回答UIの警告修正
+
+- Playlistを閉じる際、Widgetツリーの破棄中に全画面表示Providerを書き換えないよう終了処理を修正
+- 全画面表示Controllerの更新を冪等化し、同じ状態を重複通知しないよう変更
+- 回答円が閉じている間は検索入力UIをレイアウトせず、縮小後の復元時に起きていたRenderFlex overflowを解消
+- 通常時の`ANSWER`と縮小時の`^`をそれぞれ円の中央へ配置
+- 通常・縮小の回答円とスキップボタンの下端を揃え、スキップボタンの右余白を24pxへ調整
+- Playlistの開閉、回答円の縮小・復元、各ボタン位置を検証する回帰テストを追加
+- `flutter analyze`指摘なし、Flutter全35テスト、iOS向け署名なしデバッグビルドの成功を確認

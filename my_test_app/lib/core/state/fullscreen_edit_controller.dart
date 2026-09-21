@@ -4,9 +4,17 @@ class FullscreenEditController extends Notifier<bool> {
   @override
   bool build() => false;
 
-  void show() => state = true;
+  void show() {
+    if (!state) {
+      state = true;
+    }
+  }
 
-  void hide() => state = false;
+  void hide() {
+    if (state) {
+      state = false;
+    }
+  }
 }
 
 final fullscreenEditProvider = NotifierProvider<FullscreenEditController, bool>(

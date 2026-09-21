@@ -548,6 +548,16 @@ void main() {
       tester.getSize(find.byKey(const ValueKey('answer-button'))).width,
       112,
     );
+    final normalAnswerRect = tester.getRect(
+      find.byKey(const ValueKey('answer-button')),
+    );
+    final skipRect = tester.getRect(find.byKey(const ValueKey('skip-button')));
+    expect(
+      tester.getCenter(find.byKey(const ValueKey('answer-label'))).dy,
+      closeTo(normalAnswerRect.center.dy, 0.1),
+    );
+    expect(skipRect.bottom, closeTo(normalAnswerRect.bottom, 0.1));
+    expect(430 - skipRect.right, closeTo(24, 0.1));
 
     await tester.drag(find.byType(ListView).last, const Offset(0, -360));
     await tester.pumpAndSettle();
@@ -560,6 +570,21 @@ void main() {
     expect(
       tester.getCenter(find.byKey(const ValueKey('answer-button'))).dx,
       closeTo(215, 0.1),
+    );
+    final compactAnswerRect = tester.getRect(
+      find.byKey(const ValueKey('answer-button')),
+    );
+    expect(compactAnswerRect.bottom, closeTo(normalAnswerRect.bottom, 0.1));
+    expect(
+      tester.getCenter(find.byKey(const ValueKey('compact-answer-handle'))).dy,
+      closeTo(compactAnswerRect.center.dy, 0.1),
+    );
+
+    await tester.drag(find.byType(ListView).last, const Offset(0, 360));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSize(find.byKey(const ValueKey('answer-button'))).width,
+      112,
     );
 
     expect(tester.takeException(), isNull);
@@ -1109,6 +1134,14 @@ void main() {
     await _pumpAsyncScreen(tester);
     expect(find.byKey(const ValueKey('playlist-menu-button')), findsOneWidget);
     expect(find.byKey(const ValueKey('shuffle-playlist-quiz')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('playlist-back-button')));
+    await _pumpAsyncScreen(tester);
+    expect(find.byKey(const ValueKey('playlist-menu-button')), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.tap(
+      find.byKey(const ValueKey('library-playlist-test-playlist-1')),
+    );
+    await _pumpAsyncScreen(tester);
     await tester.tap(find.widgetWithText(Tab, '作品'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('toggle-playlist-reorder')));

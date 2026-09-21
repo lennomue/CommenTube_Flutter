@@ -43,7 +43,11 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
 
   @override
   void dispose() {
-    _fullscreenEditController.hide();
+    if (_isEditing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fullscreenEditController.hide();
+      });
+    }
     super.dispose();
   }
 
