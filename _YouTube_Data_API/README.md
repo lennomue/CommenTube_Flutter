@@ -162,7 +162,7 @@ tests/           APIキー不要のルールテスト
 
 ### 自動同期の設計
 
-既存の個人用スプレッドシートへローカルMacから書くため、初期実装はサービスアカウントの長期秘密鍵ではなく、本人のGoogleアカウントを使うOAuth 2.0「デスクトップアプリ」認証にします。既知のSpreadsheet IDへセル値を書くだけならGoogle Sheets APIで足り、ファイル作成や検索をしない限りGoogle Drive APIは不要です。
+既存の1枚のスプレッドシートだけへローカルMacから定期的に書くため、初期実装はGoogle Cloudのサービスアカウントを使います。サービスアカウントへGoogle CloudプロジェクトのIAMロールやドメイン全体の委任は与えず、対象シートだけをサービスアカウントのメールアドレスへ編集者として直接共有します。これにより認証主体を個人アカウントから分け、アクセス範囲を対象シートへ限定します。既知のSpreadsheet IDへセル値を書くだけならGoogle Sheets APIで足り、ファイル作成や検索をしない限りGoogle Drive APIは不要です。
 
 予定するシートは次のとおりです。
 
@@ -179,12 +179,13 @@ tests/           APIキー不要のルールテスト
 
 1. Google Cloud Consoleでプロジェクトを選ぶ。YouTube用と同じプロジェクトでも、分離したプロジェクトでもよい。
 2. **Google Sheets API**を有効化する。
-3. Google Auth Platformの同意画面を構成する。個人Gmailなら通常は`External`として自分をテストユーザーに加える。Google Workspace管理下で組織内だけなら`Internal`を選べる。
-4. OAuth Client IDを`Desktop app`として作り、ダウンロードしたJSONを`_YouTube_Data_API/credentials.json`へ置く。
-5. `.env`へ対象シートの`GOOGLE_SPREADSHEET_ID`を保存する。
-6. 将来追加する同期コマンドを初めて実行するとブラウザが開くので、対象シートを編集できるGoogleアカウントで許可する。取得される`token.json`は次回以降の認証に使う。
+3. 認証情報作成時は`Application data`を選び、サービスアカウントを作成する。Google CloudプロジェクトのIAMロールは付けない。
+4. サービスアカウントのJSON鍵を1つ作り、ダウンロードしたファイルを`_YouTube_Data_API/credentials.json`へ改名して置く。`chmod 600 credentials.json`で所有者だけが読み書きできるようにする。
+5. 対象スプレッドシートの共有画面で、サービスアカウントのメールアドレスを編集者として追加する。サービスアカウントには受信箱がないため通知は不要。
+6. `.env`へ対象シートの`GOOGLE_SPREADSHEET_ID`を保存する。
 
-`credentials.json`、`token.json`、`.env`はGit対象外です。チャットへ内容を貼りません。書き込み権限はSheetsスコープだけに限定し、Drive全体の権限は要求しません。
+`credentials.json`と`.env`はGit対象外です。Google Cloudの既定ダウンロード名`commentube-*.json`も、改名前に誤って追跡しないようGit対象外にしています。鍵ファイルの内容をチャットへ貼りません。鍵をGitへ追加した疑いがある場合は、ignore追加だけではなくGoogle Cloudでその鍵を無効化・削除して新しい鍵を発行します。
 
 - [Google Sheets API Pythonクイックスタート](https://developers.google.com/workspace/sheets/api/quickstart/python)
 - [Google Sheets APIの値の読み書き](https://developers.google.com/workspace/sheets/api/guides/values)
+- [Google Workspace用認証情報の選択](https://developers.google.com/workspace/guides/create-credentials)

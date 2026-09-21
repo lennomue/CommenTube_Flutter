@@ -8,6 +8,9 @@ token.json
 client_secret*.json
 service-account*.json
 google-credentials*.json
+# Google Cloudがこのプロジェクトのサービスアカウント鍵へ付ける既定名。
+# credentials.jsonへ改名する前の一時状態もGitへ出さない。
+commentube-*.json
 .cache
 
 # Generated or downloaded working data.

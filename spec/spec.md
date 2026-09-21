@@ -380,7 +380,7 @@ Riverpodに置くのは複数画面・共通ナビゲーションから参照す
 3. OpenAIまたはJevで意味評価する場合は、人が確認するコメント候補を最大15件程度へ絞る。OpenAI APIのStructured OutputsはPydanticで固定した型へコメント評価、表示タイトル、ジャンル、言語、アーティスト候補、検索キーワードを出力できる。ChatGPT Plus契約はAPIキーやAPI利用枠を含まないため、利用時は開発者用のAPIキーを別途`.env`へ設定する。
 4. Jevは任意の実験的な`CommentRanker`とし、作品固有性・有用性・答え漏れ・ノイズの型付き採点だけを担当させる。自由文のタイトル、アーティスト、関連動画などの事実生成やDB確定には使わない。early access中は外部送信を実装せず、同じ基準の入力JSONを生成して比較可能にする。
 5. AI提案を`needs_review`状態のJSONと、1コメント1行のUTF-8 CSVへ出力する。Google Sheetsには最大15件程度の候補を同期し、人がコメント言語、答え漏れ、有用性、事実、既存アーティストとの同一性、既存動画・関連動画を確認して、表示順を含む1〜8件を最終採用する。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
-6. Google Sheets自動同期はローカルPythonツールからGoogle Sheets APIを使用する。既存の個人用シートには本人のGoogleアカウントによるOAuth 2.0デスクトップ認証を使い、`credentials.json`と`token.json`をGit対象外にする。既知のSpreadsheet IDへ値を書くだけならGoogle Drive APIへ権限を広げない。再同期時は安定IDで行を更新し、人が入力した採否・メモ・最終順序を上書きしない。
+6. Google Sheets自動同期はローカルPythonツールからGoogle Sheets APIを使用する。対象シートだけをIAMロールなしのサービスアカウントへ編集者として直接共有し、JSON鍵`credentials.json`をGit対象外にする。既知のSpreadsheet IDへ値を書くだけなのでGoogle Drive APIやドメイン全体の委任へ権限を広げない。再同期時は安定IDで行を更新し、人が入力した採否・メモ・最終順序を上書きしない。
 7. 人が`approved`にしたデータだけをSupabase投入候補とする。`artist_id`候補は既存Artistと照合し、`videos_junction`の関係は必ず人が確定する。投入処理はフェーズ7で、承認済みデータだけを受け付ける別コマンドとして実装する。
 
 APIキーは`_YouTube_Data_API/.env`だけに置きます。共有用の`.env.example`は置かず、必要な変数名と作成方法は`_YouTube_Data_API/README.md`を正本とします。`.env`、rawデータ、AI生成物、認証キャッシュはGit管理外とし、Flutter asset、Python/Dartソース、`Info.plist`、コミット履歴へ実キーやトークンを入れません。API例外はキー付きURLやレスポンス本文をそのまま出力せず、リソース名とHTTPステータスだけに秘匿化します。漏えいが疑われるキーは提供元で無効化・再発行します。

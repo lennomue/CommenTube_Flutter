@@ -281,7 +281,7 @@
 - 6.1L API実データ確認と秘密情報保護: YouTube Data APIで1動画・最大100コメントのraw取得に成功した。OpenAIなしで候補判定を1行ずつ確認できる`review-rules`を追加し、40候補のJSON/CSVを生成した。実データでは決定的ルールが人物名の別言語表記まで完全に除外できないため、人/AIレビューを必須のままとした。通信例外からAPIキー付きURLを除く秘匿化と回帰テストを追加し、Python全6テストが成功した。
 - 6.1M 環境変数ファイル整理: 個人開発でREADMEと重複する`.env.example`を削除し、必要な変数名と`.env`作成手順を`_YouTube_Data_API/README.md`へ集約した。実キーは引き続きGit対象外の`.env`だけに保存する。
 - 6.1N Playlist終了と回答UIの警告修正: Playlist破棄中のProvider更新を廃止し、編集中にルートが終了する場合だけ次フレームで全画面状態を解除する。閉じた回答円で透明な検索Columnをレイアウトしない構成とし、縮小→復元時のRenderFlex overflowを解消した。`ANSWER`を通常円の中央、縮小時の`^`を縮小円の中央に置き、通常・縮小・スキップ円の下端とスキップの右余白を24pxに揃えた。Playlist開閉と回答円の縮小・復元・位置の回帰テストを追加した。`flutter analyze`は指摘なし、Flutter全35テスト、署名なしiOSデバッグビルドが成功した。
-- 6.1O データレビュー工程の再整理: `collect`と`review-rules`はOpenAI/Jevを呼ばず、`prepare-jev`も入力JSON生成だけである現状をREADMEへ明記した。raw最大200件、ルール候補最大40件、OpenAI/Jevのレビュー候補最大15件、人が最終採用するコメント1〜8件の段階へ整理した。Google SheetsはCSVの手動取込から始め、次にローカルPythonのOAuth 2.0デスクトップ認証で既存シートへ同期する。自動同期では人の採否・メモ・順序を上書きしない。現行`draft-openai`の最大5件仮採用とSheets同期未実装は、外部認証準備後の残作業として明記した。
+- 6.1O データレビュー工程の再整理: `collect`と`review-rules`はOpenAI/Jevを呼ばず、`prepare-jev`も入力JSON生成だけである現状をREADMEへ明記した。raw最大200件、ルール候補最大40件、OpenAI/Jevのレビュー候補最大15件、人が最終採用するコメント1〜8件の段階へ整理した。Google SheetsはCSVの手動取込から始め、次にローカルPythonから既存シートへ同期する。認証は当初OAuth 2.0デスクトップ方式を想定したが、特定の1シートだけを定期更新する用途に合わせ、IAMロールなしのサービスアカウントへ対象シートだけを直接共有する方式へ確定した。自動同期では人の採否・メモ・順序を上書きしない。現行`draft-openai`の最大5件仮採用とSheets同期未実装は、外部認証準備後の残作業として明記した。
 
 **実機確認済み（2026-09-21）**
 
@@ -294,7 +294,7 @@
 - 初回通信失敗のローカル例外ログに含まれたYouTube APIキーを再度ローテーションし、Git対象外の`_YouTube_Data_API/.env`だけを更新する。キーをチャットやソースファイルへ貼らない。
 - `_YouTube_Data_API/data/generated/y2bVIBwpCTA.rules-review.csv`の`reviewer_selected`と`reviewer_notes`を人が確認し、別言語の答え漏れとクイズとしての有用性を評価する。
 - OpenAI/Jevはキーと利用料金を確認した後に任意で接続し、Google Sheets自動連携と承認済みデータのSupabase投入は運用確定後まで行わない。
-- Google Sheets APIを有効化し、個人Googleアカウント用のOAuth 2.0 Desktop clientを作成する。`credentials.json`は`_YouTube_Data_API/`へ置き、内容をチャットやGitへ入れない。Sheets同期実装後の初回認証で作られる`token.json`もGit対象外にする。
+- Google Sheets APIを有効化し、Google CloudプロジェクトのIAMロールを持たないサービスアカウントを作成する。対象シートだけをそのメールアドレスへ編集者として共有し、JSON鍵は`_YouTube_Data_API/credentials.json`へ置く。鍵の内容をチャットやGitへ入れない。
 - コメント候補と最終採用をデータ上で分離し、OpenAI/Jevの最大15件候補を1コメント1行でSheetsへ同期した後、人が選んだ1〜8件だけを確定クイズへ組み立てる。現行`draft-openai`の最大5件切り出しはこの実装時に置き換える。
 
 ---
