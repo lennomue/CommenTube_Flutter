@@ -20,6 +20,7 @@ import 'package:my_test_app/core/repositories/quiz_providers.dart';
 import 'package:my_test_app/core/repositories/quiz_repository.dart';
 import 'package:my_test_app/core/router/app_router.dart';
 import 'package:my_test_app/core/widgets/neon_accent.dart';
+import 'package:my_test_app/features/home/presentation/home_screen.dart';
 import 'package:my_test_app/features/library/presentation/playlist_screen.dart';
 
 void main() {
@@ -30,6 +31,47 @@ void main() {
   });
   tearDownAll(() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = false;
+  });
+
+  testWidgets('クイズサムネは黒い上部・白いヒント・雰囲気色の下部で表示する', (tester) async {
+    final quiz = _buildTestQuiz(
+      videoId: 'thumbnail-style-video',
+      title: 'Thumbnail Style',
+      artist: 'Style Artist',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: HomeQuizPreviewCard(quiz: quiz, onTap: () {}),
+          ),
+        ),
+      ),
+    );
+
+    final upper = tester.widget<DecoratedBox>(
+      find.byKey(const ValueKey('quiz-thumbnail-upper-thumbnail-style-video')),
+    );
+    expect((upper.decoration as BoxDecoration).color, Colors.black);
+
+    final hint = tester.widget<Container>(
+      find.byKey(const ValueKey('quiz-thumbnail-hint-thumbnail-style-video')),
+    );
+    expect((hint.decoration! as BoxDecoration).color, Colors.white);
+
+    final lower = tester.widget<Container>(
+      find.byKey(const ValueKey('quiz-thumbnail-lower-thumbnail-style-video')),
+    );
+    final lowerGradient = (lower.decoration! as BoxDecoration).gradient!;
+    final atmosphere = quiz.quiz.atmosphereColor;
+    final expectedAccent = HSLColor.fromAHSL(
+      1,
+      atmosphere.hue,
+      atmosphere.saturation,
+      atmosphere.lightness,
+    ).toColor().withValues(alpha: 0.78);
+    expect((lowerGradient as LinearGradient).colors.first, expectedAccent);
   });
 
   testWidgets('Home画面は30問から新規優先で10問を表示する', (tester) async {

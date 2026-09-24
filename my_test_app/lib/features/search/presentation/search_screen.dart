@@ -221,16 +221,15 @@ class _SearchResults extends StatelessWidget {
         return;
       }
       resultWidgets.add(_ResultHeader(label));
-      for (final indexed in items.indexed) {
+      for (final item in items) {
         resultWidgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
             child: HomeQuizPreviewCard(
-              key: ValueKey('search-quiz-${indexed.$2.quiz.videoId}'),
-              quiz: indexed.$2,
-              colorIndex: indexed.$1,
+              key: ValueKey('search-quiz-${item.quiz.videoId}'),
+              quiz: item,
               isNew: false,
-              onTap: () => onQuizOpen(indexed.$2.quiz.videoId),
+              onTap: () => onQuizOpen(item.quiz.videoId),
             ),
           ),
         );

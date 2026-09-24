@@ -66,6 +66,7 @@ String genreLabel(String genre) {
     'latin' => 'ラテン',
     'dance_electronic' => 'ダンス・エレクトロニック',
     'vocaloid_utaite' => 'ボカロ・歌い手',
+    'fan_made_video' => '合成MAD',
     'non_music' => 'その他',
     _ => genre,
   };

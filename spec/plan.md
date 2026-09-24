@@ -282,6 +282,7 @@
 - 6.1M 環境変数ファイル整理: 個人開発でREADMEと重複する`.env.example`を削除し、必要な変数名と`.env`作成手順を`_YouTube_Data_API/README.md`へ集約した。実キーは引き続きGit対象外の`.env`だけに保存する。
 - 6.1N Playlist終了と回答UIの警告修正: Playlist破棄中のProvider更新を廃止し、編集中にルートが終了する場合だけ次フレームで全画面状態を解除する。閉じた回答円で透明な検索Columnをレイアウトしない構成とし、縮小→復元時のRenderFlex overflowを解消した。`ANSWER`を通常円の中央、縮小時の`^`を縮小円の中央に置き、通常・縮小・スキップ円の下端とスキップの右余白を24pxに揃えた。Playlist開閉と回答円の縮小・復元・位置の回帰テストを追加した。`flutter analyze`は指摘なし、Flutter全35テスト、署名なしiOSデバッグビルドが成功した。
 - 6.1O データレビュー工程の再整理: `collect`と`review-rules`はOpenAI/Jevを呼ばず、`prepare-jev`も入力JSON生成だけである現状をREADMEへ明記した。raw最大200件、ルール候補最大40件、OpenAI/Jevのレビュー候補最大15件、人が最終採用するコメント1〜8件の段階へ整理した。Google SheetsはCSVの手動取込から始め、次にローカルPythonから既存シートへ同期する。認証は当初OAuth 2.0デスクトップ方式を想定したが、特定の1シートだけを定期更新する用途に合わせ、IAMロールなしのサービスアカウントへ対象シートだけを直接共有する方式へ確定した。自動同期では人の採否・メモ・順序を上書きしない。現行`draft-openai`の最大5件仮採用とSheets同期未実装は、外部認証準備後の残作業として明記した。
+- 6.1P 内容ジャンルとクイズサムネイルの整理: `video_genre=fan_made_video`は元楽曲ジャンルを残したまま`content_genres`へ`fan_made_video`を追加し、`video_genre=non_music`は`non_music`を必須とする規則を仕様・モック・Repository検証へ反映した。内容ジャンルの絞り込みにも「合成MAD」「その他」を追加した。クイズサムネイルは支給画像`home_thumbnail.jpg`を基準に、上部を黒、代表ヒント欄だけを白、再生回数・投稿時期の下部だけを`video_atmosphere_color`由来の色に変更した。`flutter analyze`は指摘なし、Flutter全37テスト、署名なしiOSデバッグビルドが成功した。
 
 **実機確認済み（2026-09-21）**
 

@@ -179,7 +179,6 @@ class _QuizFeed extends StatelessWidget {
         return HomeQuizPreviewCard(
           key: ValueKey('quiz-card-${quiz.quiz.videoId}'),
           quiz: quiz,
-          colorIndex: index,
           onTap: () => onOpenQuiz(quiz.quiz.videoId),
           isNew: !seenIds.contains(quiz.quiz.videoId),
         );
@@ -192,27 +191,23 @@ class HomeQuizPreviewCard extends StatelessWidget {
   const HomeQuizPreviewCard({
     super.key,
     required this.quiz,
-    required this.colorIndex,
     required this.onTap,
     this.isNew = false,
   });
 
-  static const _accentColors = [
-    Color(0xFF9D7375),
-    Color(0xFF718978),
-    Color(0xFF81749C),
-    Color(0xFF7F8469),
-    Color(0xFF697F8E),
-  ];
-
   final QuizWithLiveStats quiz;
-  final int colorIndex;
   final VoidCallback onTap;
   final bool isNew;
 
   @override
   Widget build(BuildContext context) {
-    final accent = _accentColors[colorIndex % _accentColors.length];
+    final atmosphere = quiz.quiz.atmosphereColor;
+    final accent = HSLColor.fromAHSL(
+      1,
+      atmosphere.hue,
+      atmosphere.saturation.clamp(0, 1).toDouble(),
+      atmosphere.lightness.clamp(0, 1).toDouble(),
+    ).toColor();
     final hint = quiz.quiz.thumbnailHint;
 
     return NeonOutline(
@@ -229,22 +224,18 @@ class HomeQuizPreviewCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 0.95,
-                      colors: [accent.withValues(alpha: 0.42), Colors.black],
-                    ),
-                  ),
+                  key: ValueKey('quiz-thumbnail-upper-${quiz.quiz.videoId}'),
+                  decoration: const BoxDecoration(color: Colors.black),
                   child: Center(
                     child: Container(
+                      key: ValueKey('quiz-thumbnail-hint-${quiz.quiz.videoId}'),
                       margin: const EdgeInsets.symmetric(horizontal: 28),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 15,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F0F0),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -275,6 +266,7 @@ class HomeQuizPreviewCard extends StatelessWidget {
                 ),
               ),
               Container(
+                key: ValueKey('quiz-thumbnail-lower-${quiz.quiz.videoId}'),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 14,
@@ -282,7 +274,7 @@ class HomeQuizPreviewCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      accent.withValues(alpha: 0.62),
+                      accent.withValues(alpha: 0.78),
                       const Color(0xFF242424),
                     ],
                   ),

@@ -168,3 +168,13 @@
 - Google既定名の鍵ファイルを`credentials.json`へ改名し、所有者だけが読み書きできる権限とGit除外を確認
 - 鍵ローテーション時の既定ダウンロード名`commentube-*.json`もGit対象外へ追加
 - 元の鍵ファイル名と`credentials.json`がGit履歴へ入っていないことを確認
+
+## 2026-09-25: 内容ジャンル規則とクイズサムネイルの更新
+
+- `fan_made_video`を内容ジャンルの候補へ追加し、合成MADは元楽曲ジャンルと同タグを併記する仕様へ変更
+- 非音楽は`content_genres`に`non_music`を必須とし、MAD・非音楽のタグ対応をRepository読み込み時に検証
+- モックの合成MADへ`fan_made_video`タグを追加し、内容ジャンルの詳細絞り込みに「合成MAD」「その他」を追加
+- 支給された`home_thumbnail.jpg`をデザイン資料として追加
+- Home・検索結果のクイズサムネイル上部を黒、ヒント欄を白へ統一し、下部だけを各クイズの`video_atmosphere_color`で着色
+- ジャンル規則とサムネイルの配色を検証するRepository・Widgetテストを追加
+- `flutter analyze`指摘なし、Flutter全37テスト、iOS向け署名なしデバッグビルドの成功を確認

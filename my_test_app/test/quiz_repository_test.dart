@@ -126,6 +126,21 @@ void main() {
     );
   });
 
+  test('合成MADと非音楽はvideo_genreに対応する内容タグを持つ', () async {
+    final repository = AssetQuizRepository();
+
+    final mad = (await repository.getQuiz('AbBaG-Bq6_E'))!.quiz;
+    expect(mad.videoGenre, 'fan_made_video');
+    expect(mad.contentGenres, contains('fan_made_video'));
+    expect(mad.contentGenres, contains('j_pop'));
+    expect(genreLabel('fan_made_video'), '合成MAD');
+
+    final nonMusic = (await repository.getQuiz('jNQXAC9IVRw'))!.quiz;
+    expect(nonMusic.videoGenre, 'non_music');
+    expect(nonMusic.contentGenres, contains('non_music'));
+    expect(genreLabel('non_music'), 'その他');
+  });
+
   test('thumbnail_hint_typeは本文を重複保持せず先頭ヒントから解決する', () async {
     final repository = AssetQuizRepository();
 

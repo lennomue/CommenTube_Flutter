@@ -203,7 +203,7 @@ class _DetailedFilterSheetState extends State<_DetailedFilterSheet> {
               children: [
                 _FilterSection(
                   title: '内容ジャンル',
-                  options: _musicGenreOptions,
+                  options: _contentGenreOptions,
                   selectedValues: _filter.contentGenres,
                   onToggle: (value) => setState(() {
                     _filter = _filter.toggleContentGenre(value);
@@ -388,7 +388,7 @@ const _videoGenreOptions = [
   _FilterOption('non_music', '非音楽'),
 ];
 
-const _musicGenreOptions = [
+const _contentGenreOptions = [
   _FilterOption('j_pop', 'J-Pop'),
   _FilterOption('j_rock', 'J-Rock'),
   _FilterOption('k_pop', 'K-Pop'),
@@ -418,4 +418,6 @@ const _musicGenreOptions = [
   _FilterOption('seasonal_summer', '夏の音楽'),
   _FilterOption('seasonal_autumn', '秋の音楽'),
   _FilterOption('seasonal_winter', '冬の音楽'),
+  _FilterOption('fan_made_video', '合成MAD'),
+  _FilterOption('non_music', 'その他'),
 ];

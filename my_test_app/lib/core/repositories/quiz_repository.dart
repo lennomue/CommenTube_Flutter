@@ -224,6 +224,7 @@ class AssetQuizRepository implements QuizRepository {
             artists: artists,
             relatedVideos: relatedByVideo[videoId] ?? const <RelatedVideo>[],
           );
+          _validateContentGenres(quiz);
           final stats = videoStats[quiz.videoId];
           if (stats == null) {
             throw FormatException('動画統計がありません: ${quiz.videoId}');
@@ -248,6 +249,23 @@ class AssetQuizRepository implements QuizRepository {
           );
         })
         .toList(growable: false);
+  }
+
+  void _validateContentGenres(Quiz quiz) {
+    if (quiz.contentGenres.isEmpty) {
+      throw FormatException('content_genresが空です: ${quiz.videoId}');
+    }
+    final requiredTag = switch (quiz.videoGenre) {
+      'fan_made_video' => 'fan_made_video',
+      'non_music' => 'non_music',
+      _ => null,
+    };
+    if (requiredTag != null && !quiz.contentGenres.contains(requiredTag)) {
+      throw FormatException(
+        'video_genre=${quiz.videoGenre}には'
+        'content_genresの$requiredTagが必要です: ${quiz.videoId}',
+      );
+    }
   }
 
   Map<String, VideoLiveStats> _parseVideoStats(Map<String, dynamic> apiJson) {
