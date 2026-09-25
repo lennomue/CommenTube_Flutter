@@ -178,3 +178,14 @@
 - Home・検索結果のクイズサムネイル上部を黒、ヒント欄を白へ統一し、下部だけを各クイズの`video_atmosphere_color`で着色
 - ジャンル規則とサムネイルの配色を検証するRepository・Widgetテストを追加
 - `flutter analyze`指摘なし、Flutter全37テスト、iOS向け署名なしデバッグビルドの成功を確認
+
+## 2026-09-25: Supabaseの探索・カード・詳細取得設計
+
+- `_YouTube_Data_API/spec.md`をSupabase/PostgreSQLの物理設計と読み込み境界の正本として作成
+- 探索用DBと表示用DBを二重管理せず、候補探索とカード結合を1回のRPC内で完了する方針を確定
+- HomeカードとGame詳細の取得境界を分け、コメント・歌詞・embedding・管理用`meta_data`をHomeレスポンスから除外
+- 生の`meta_data`はembedding・全文検索文書の生成時だけ使い、内容またはモデルが変わった行だけ再生成する方針を追加
+- 検索用embeddingと推薦用item embeddingを分離し、文字検索では完全一致とアーティスト一致をユーザー嗜好より優先
+- 初期のコンテンツベース推薦と将来の学習済みTwo-Towerを区別し、impressionを含む行動ログ要件を定義
+- ヒント、YouTube統計、検索派生値、索引、RLS、キャッシュ、性能計測の方針を整理
+- 実行方法に集中させるため`_YouTube_Data_API/README.md`は変更していない
