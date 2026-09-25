@@ -284,6 +284,7 @@
 - 6.1O データレビュー工程の再整理: `collect`と`review-rules`はOpenAI/Jevを呼ばず、`prepare-jev`も入力JSON生成だけである現状をREADMEへ明記した。raw最大200件、ルール候補最大40件、OpenAI/Jevのレビュー候補最大15件、人が最終採用するコメント1〜8件の段階へ整理した。Google SheetsはCSVの手動取込から始め、次にローカルPythonから既存シートへ同期する。認証は当初OAuth 2.0デスクトップ方式を想定したが、特定の1シートだけを定期更新する用途に合わせ、IAMロールなしのサービスアカウントへ対象シートだけを直接共有する方式へ確定した。自動同期では人の採否・メモ・順序を上書きしない。現行`draft-openai`の最大5件仮採用とSheets同期未実装は、外部認証準備後の残作業として明記した。
 - 6.1P 内容ジャンルとクイズサムネイルの整理: `video_genre=fan_made_video`は元楽曲ジャンルを残したまま`content_genres`へ`fan_made_video`を追加し、`video_genre=non_music`は`non_music`を必須とする規則を仕様・モック・Repository検証へ反映した。内容ジャンルの絞り込みにも「合成MAD」「その他」を追加した。クイズサムネイルは支給画像`home_thumbnail.jpg`を基準に、上部を黒、代表ヒント欄だけを白、再生回数・投稿時期の下部だけを`video_atmosphere_color`由来の色に変更した。`flutter analyze`は指摘なし、Flutter全37テスト、署名なしiOSデバッグビルドが成功した。
 - 6.1Q Supabase読み込み設計: `_YouTube_Data_API/spec.md`をSupabase物理設計の正本として整理した。正本DBは分けず、同じPostgreSQL内で探索・カード・詳細をRPC境界に分ける。候補探索とカード結合は1 RPC、コメント・歌詞等はGame開始時の詳細RPCとする。検索用embedding、推薦用item embedding、生の`meta_data`、統計、ヒントを更新頻度と用途別に分離し、検索とHome推薦の順位目的、Two-Tower導入前のコンテンツベース推薦、将来必要なimpressionを含む行動ログ、HNSW・GIN・B-tree索引、RLS、計測基準を確定した。実行手順に集中させるため`_YouTube_Data_API/README.md`は変更していない。
+- 6.1R Supabase物理スキーマとSheets staging: `spec/spec.md`の入れ子JSONをFlutter・人向けの結合済み論理表現と明記し、実際のSupabaseでは`quizzes`、`quiz_comments`、`quiz_lyrics`、`video_stats`、アーティスト・関連・embeddingテーブルへ対応させる設計を`_YouTube_Data_API/spec.md`へ追加した。SupabaseがJSONB・配列を扱えることを前提に、タグは配列、可変補助情報はJSONB、複数属性を持つ可変件数のコメントは1件1行とする。コメント1〜8件は編集上の目安へ変更し、DB上限にはしない。Sheetsは人向け`comment_review`とSupabase同名の物理テーブル再現シートへ分け、安定キー、hash、`pending`/`dirty`/`synced`/`error`、読み戻し確認、明示的削除、公開前transactionを定義した。READMEからシート設計の重複を外し、実行・Google認証準備へ集中させた。
 
 **実機確認済み（2026-09-21）**
 
@@ -297,15 +298,15 @@
 - `_YouTube_Data_API/data/generated/y2bVIBwpCTA.rules-review.csv`の`reviewer_selected`と`reviewer_notes`を人が確認し、別言語の答え漏れとクイズとしての有用性を評価する。
 - OpenAI/Jevはキーと利用料金を確認した後に任意で接続し、Google Sheets自動連携と承認済みデータのSupabase投入は運用確定後まで行わない。
 - Google Sheets APIを有効化し、Google CloudプロジェクトのIAMロールを持たないサービスアカウントを作成する。対象シートだけをそのメールアドレスへ編集者として共有し、JSON鍵は`_YouTube_Data_API/credentials.json`へ置く。鍵の内容をチャットやGitへ入れない。
-- コメント候補と最終採用をデータ上で分離し、OpenAI/Jevの最大15件候補を1コメント1行でSheetsへ同期した後、人が選んだ1〜8件だけを確定クイズへ組み立てる。現行`draft-openai`の最大5件切り出しはこの実装時に置き換える。
+- コメント候補と最終採用をデータ上で分離し、OpenAI/Jevが15件程度を目安に絞った候補を`comment_review`へ1コメント1行で同期する。人が選んだ1〜8件程度（有効ならそれ以上）を`quiz_comments`等のSupabase再現シートへ組み立て、承認・hash差分・読み戻し確認を経て反映する。現行`draft-openai`の最大5件切り出しはこの実装時に置き換える。
 
 ---
 
 ### フェーズ7: 仕上げ ― Supabase・YouTube Data APIへの本接続
 
 **やること**
-- Supabaseプロジェクトを作成し、`users`/`quizzes`/`artists`/`artist_videos_junction`/`artists_junction`/`videos_junction`/`user_playlists`/`user_playlist_items`テーブルを作成する(`content_genre`/`video_genre`/`language`/`date_precision`/`thumbnail_hint_type`/`artist_relation_type`/`video_relation_type`のENUM型定義を含む)。認証を要する公開・共同編集用RLSは後続フェーズで有効化する。
-- `quizzes.json`、`artists.json`、`artist_videos_junction.json`、`artists_junction.json`、`videos_junction.json`、`public_playlists.json`のデータをSupabaseに一括投入する(投入用の一時スクリプトを書き、投入後は削除するか`tool/`配下に残す場合は役割をコメントで明記する)。
+- Supabaseプロジェクトを作成し、`users`/`quizzes`/`quiz_comments`/`quiz_lyrics`/`video_stats`/`artists`/`artist_videos_junction`/`artists_junction`/`videos_junction`/`user_playlists`/`user_playlist_items`と目的別embeddingテーブルを作成する(`content_genre`/`video_genre`/`language`/`date_precision`/`thumbnail_hint_type`/`artist_relation_type`/`video_relation_type`等のENUM型定義を含む)。認証を要する公開・共同編集用RLSは後続フェーズで有効化する。
+- 現行の結合済みJSONから`quizzes`、`quiz_comments`、`quiz_lyrics`、`video_stats`等の物理行へ変換し、アーティスト・中間テーブル・公開プレイリストとともにSupabaseへ一括投入する。投入用スクリプトは安定キーで冪等にし、残す場合は`tool/`配下で役割を明記する。
 - `quiz_repository`の中身を、JSON読み込みから`supabase_flutter`経由の呼び出し(`.rpc()`/`.from()`)に差し替える。**フェーズ1で決めたインターフェースを保っていれば、画面側のコードは変更不要のはず**。ここが崩れる場合は設計の見直しが必要なサインなので、その旨を報告すること。
 - YouTube Data APIキーを取得し、Google Cloud ConsoleでAndroidパッケージ名/iOSバンドルIDによる制限をかける。`youtube_api_mock.json`への依存を、実際の`videos.list`呼び出しに差し替える(`video_id`を最大50件までカンマ区切りでまとめて1回のAPI呼び出しにすることでクォータを節約する)。
 - フェーズ4の簡易フィルタを、SupabaseのRPC関数(ENUM配列の`&&`演算子等)を使った本実装に置き換える。

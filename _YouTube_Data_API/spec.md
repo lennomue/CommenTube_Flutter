@@ -52,7 +52,7 @@ Homeの推薦と検索欄の検索結果は順位目的を分けます。Homeで
 カードが押された時に`get_quiz_detail(video_id)`を1回呼び、次を取得します。
 
 - 基本情報、内容ジャンル、動画ジャンル、言語、リリース時期
-- 表示順付きの採用コメント1〜8件
+- 表示順付きの採用コメント。1〜8件程度を目安とするがDB上限は設けない
 - 表示順付きの歌詞ヒント
 - アーティストと別名
 - 関連動画と`relation_type`
@@ -86,14 +86,24 @@ Homeの推薦と検索欄の検索結果は順位目的を分けます。Homeで
 
 ### 3.2. ヒントと統計
 
+Supabaseは入れ子の`jsonb`と配列を保存できます。コメントを別テーブルにするのはSupabaseの制限ではなく、件数が増減するデータを個別に並び替え・更新・検証するためです。
+
 次のデータは`quizzes`から分けます。
 
-- `quiz_comments(video_id, comment_id, content, commented_at, display_order, ...)`
+- `quiz_comments(video_id, comment_id, display_order, content, commented_at, comment_favorite_count, comment_favorite_count_last_updated_at)`
 - `quiz_lyrics(video_id, lyric_id, content, display_order, ...)`
 - `video_stats(video_id, view_count, like_count, fetched_at)`
-- 必要なら`comment_stats(comment_id, like_count, fetched_at)`
 
-代表ヒントは`thumbnail_hint_type`に対応する`display_order=1`の行です。同じ本文を`quizzes`へ複製しません。`(video_id, display_order)`へ索引を作り、カードRPCが先頭1件だけを結合します。
+コメント本文、投稿時期、いいね数は「1番目用の列」「2番目用の列」に分けません。1コメントを1行とし、その行の各列へ保存します。採用コメントが増えた場合は行を追加するだけで、テーブルの列構造は変えません。
+
+| `video_id` | `display_order` | `comment_id` | `content` | `commented_at` | `comment_favorite_count` |
+|---|---:|---|---|---|---:|
+| `y2bVIBwpCTA` | 1 | `Ugz...` | `Imagine a 10 year old...` | `2020-07-14T10:00:08Z` | 12000 |
+| `y2bVIBwpCTA` | 2 | `Ugy...` | `We want you back...` | `2025-03-10T13:00:08Z` | 12000 |
+
+主キーは`(video_id, comment_id)`、表示順は`unique(video_id, display_order)`とします。`display_order`は1以上で、削除・並び替え後は同一動画内で重複しない値に整えます。1〜8件程度は編集上の目安であり、物理DBには最大8件のCHECK制約を付けません。
+
+代表ヒントは`thumbnail_hint_type`に対応する`display_order=1`の行です。同じ本文を`quizzes`へ複製しません。`(video_id, display_order)`へ索引を作り、カードRPCが先頭1件だけを結合します。Flutterへ返す時はRPCが行を表示順に集約するため、`../spec/spec.md`の入れ子JSONと同じ`comments: [...]`として受け取れます。
 
 統計を分離する理由は、再生回数更新のたびに安定したクイズ行やembedding索引を更新しないためです。統計の取得失敗時は直近値を返します。
 
@@ -134,6 +144,8 @@ Homeの候補探索でこれらを毎回すべて結合しません。アーテ�
 
 ユーザー嗜好ベクトルと比較するitem embeddingです。将来、本当のTwo-Towerモデルを学習する場合もこの出力先を使います。
 
+アーティストと公開プレイリストを意味検索へ含める時は、同じ考え方で`artist_search_embeddings`と`playlist_search_embeddings`を用意します。各正本行へ検索用と推薦用のベクトルを混在させず、目的・モデル・再生成単位を明確にします。
+
 #### `user_recommendation_profiles`（サーバー側プロフィールを導入する時だけ）
 
 - `subject_id`
@@ -160,6 +172,142 @@ Two-Towerを学習するには、正解・お気に入り等の正反応だけ�
 現状のDrift履歴は端末外へ自動共有されないため、それだけではサーバー学習データになりません。初期は最近の履歴IDをRPC引数で渡す方式とし、行動ログをSupabaseへ保存する段階では匿名IDまたは認証、利用目的、保持期間、削除方法を先に確定します。
 
 検索用と推薦用のembeddingは次元が同じでも意味が同じとは限りません。同じ列や索引へ混在させず、それぞれにHNSW索引を持たせます。モデル変更中は`model_version`を照合し、異なるバージョンのベクトル同士を比較しません。
+
+### 3.5. JSON表現とPostgreSQL型の使い分け
+
+`../spec/spec.md`のJSONは、Flutterと人がクイズ1件を理解しやすい結合済みの論理表現です。Supabaseでは次の基準で物理保存します。
+
+- `jsonb`: 構造をまとめて扱い、内部要素を個別更新・外部参照しない値。`video_atmosphere_color`と可変な`meta_data`に使用する。
+- PostgreSQL配列: 要素自体にID、投稿時刻、表示順以外の属性を持たない小さな集合。`content_genres`、`languages`、`artists.sub_names`に使用する。
+- 子テーブル: 各要素がID、本文、時刻、評価数、表示順等の複数属性を持ち、件数が増減するもの。コメント、歌詞、再生リスト項目、お気に入り等に使用する。
+- 専用列: 絞り込み、並び替え、制約に使う既知の値。`posted_at`、`video_genre`、リリース日と精度等に使用する。
+
+したがって、Supabaseが入れ子JSONを扱えないから正規化するのではありません。既知の構造を持つコメントは行にした方が、参照整合性、個別更新、並び順、一意性、Sheetsからの差分同期をDBで保証しやすいためです。逆に`meta_data`のように用途が増える補助情報は`jsonb`のままにします。
+
+### 3.6. `quizzes`とヒントの物理列
+
+`quizzes`の物理行は次の列を持ちます。SQL migration作成時は列名と型をこの表に合わせます。
+
+| 列 | PostgreSQL型 | 制約・用途 |
+|---|---|---|
+| `video_id` | `text` | Primary Key、YouTube動画ID |
+| `video_atmosphere_color` | `jsonb` | 非NULL。`h`、`s`、`l`を持つことを検証 |
+| `content_genres` | `content_genre[]` | 非NULL、`cardinality(...) > 0` |
+| `video_genre` | `video_genre` | 非NULL |
+| `title` | `text` | 非NULL |
+| `languages` | `language[]` | 非NULL、言語表現がなければ空配列 |
+| `posted_at` | `timestamptz` | 非NULL、UTCで保存 |
+| `music_released_date` | `date` | 不明ならNULL |
+| `music_released_precision` | `date_precision` | 日付と同時にNULL、または`year`/`month`/`day` |
+| `thumbnail_hint_type` | `thumbnail_hint_type` | 非NULL、`comment`/`lyric` |
+| `meta_data` | `jsonb` | 非NULL、既定値`{}` |
+| `publication_status` | `publication_status` | `draft`/`published`/`archived` |
+| `content_updated_at` | `timestamptz` | embedding再生成判定 |
+| `created_at` | `timestamptz` | 作成監査 |
+| `updated_at` | `timestamptz` | 更新監査 |
+
+次は構造を示すSQLです。enumの全候補は`../spec/spec.md`を正本とし、実際のmigrationで列挙します。
+
+```sql
+create table quizzes (
+  video_id text primary key,
+  video_atmosphere_color jsonb not null,
+  content_genres content_genre[] not null,
+  video_genre video_genre not null,
+  title text not null,
+  languages language[] not null default '{}',
+  posted_at timestamptz not null,
+  music_released_date date,
+  music_released_precision date_precision,
+  thumbnail_hint_type thumbnail_hint_type not null,
+  meta_data jsonb not null default '{}'::jsonb,
+  publication_status publication_status not null default 'draft',
+  content_updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint quizzes_content_genres_not_empty
+    check (cardinality(content_genres) > 0),
+  constraint quizzes_release_date_pair
+    check (
+      (music_released_date is null and music_released_precision is null)
+      or
+      (music_released_date is not null and music_released_precision is not null)
+    )
+);
+
+create table quiz_comments (
+  video_id text not null references quizzes(video_id) on delete cascade,
+  comment_id text not null,
+  display_order integer not null check (display_order >= 1),
+  content text not null check (btrim(content) <> ''),
+  commented_at timestamptz not null,
+  comment_favorite_count bigint not null default 0
+    check (comment_favorite_count >= 0),
+  comment_favorite_count_last_updated_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (video_id, comment_id),
+  unique (video_id, display_order)
+);
+
+create table quiz_lyrics (
+  lyric_id uuid primary key default gen_random_uuid(),
+  video_id text not null references quizzes(video_id) on delete cascade,
+  display_order integer not null check (display_order >= 1),
+  content text not null check (btrim(content) <> ''),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (video_id, display_order)
+);
+
+create table video_stats (
+  video_id text primary key references quizzes(video_id) on delete cascade,
+  view_count bigint not null default 0 check (view_count >= 0),
+  like_count bigint not null default 0 check (like_count >= 0),
+  fetched_at timestamptz not null
+);
+```
+
+`thumbnail_hint_type=comment`なら、その動画に`display_order=1`の`quiz_comments`行が必要です。`lyric`なら同じ条件の`quiz_lyrics`行が必要です。このテーブルをまたぐ規則は単純な行CHECKでは表しにくいため、承認済みデータの投入関数とテストで検証します。
+
+### 3.7. `../spec/spec.md`から物理テーブルへの対応
+
+| 論理JSONの場所 | Supabaseの保存先 | 備考 |
+|---|---|---|
+| `quiz.video_id`〜`thumbnail_hint_type` | `quizzes` | 絞り込みと安定した基本情報 |
+| `video_atmosphere_color` | `quizzes.video_atmosphere_color jsonb` | 1列のJSONB。HSLを別行にはしない |
+| `content_genres` | `quizzes.content_genres content_genre[]` | 配列で保持しGIN索引を使う |
+| `languages` | `quizzes.languages language[]` | 空配列を許容 |
+| `music_released_at` | `music_released_date`と`music_released_precision` | 比較可能な専用列へ分ける |
+| `comments[]` | `quiz_comments` | コメント1件が1行 |
+| `music_lyrics[]` | `quiz_lyrics` | 歌詞ヒント1件が1行 |
+| 動画統計 | `video_stats` | YouTube API更新だけでクイズ本文を更新しない |
+| `meta_data` | `quizzes.meta_data jsonb` | 管理・派生データ生成用 |
+| `embedding` | `quiz_search_embeddings`、`quiz_recommendation_embeddings` | 目的別に分離 |
+| `artists[]` | `artists`と`artist_videos_junction` | クイズ取得時に結合。検索ベクトルは`artist_search_embeddings` |
+| `related_videos[]` | `videos_junction` | 無方向の辺として保存 |
+| 関連アーティスト | `artists_junction` | 無方向の辺として保存 |
+| プレイリストと`video_ids[]` | `user_playlists`と`user_playlist_items` | 順序は`position` |
+| ユーザーのお気に入り・履歴 | 現在はDrift。クラウド化時は種類別の子テーブル | `users`行の配列へ増分追加し続けない |
+
+この構造でもFlutter側は別々の配列を手作業で組み立てません。`get_quiz_detail`が外部キーで結合し、コメントと歌詞を`display_order`順に集約して、`../spec/spec.md`に示した結合済みJSON相当を返します。
+
+### 3.8. その他の物理テーブル
+
+| テーブル | 主キー | 主な列・制約 |
+|---|---|---|
+| `artists` | `artist_id uuid` | `name text not null`、`sub_names text[] not null default '{}'`、監査時刻 |
+| `artist_videos_junction` | `(artist_id, video_id)` | 両列を外部キーとし、逆引き用に`video_id`索引 |
+| `artists_junction` | `(artist_id_a, artist_id_b)` | `artist_id_a < artist_id_b`、自己参照禁止、`relation_type` |
+| `videos_junction` | `(video_id_a, video_id_b)` | `video_id_a < video_id_b`、自己参照禁止、`relation_type` |
+| `user_playlists` | `playlist_id` | owner、名前、説明、公開・共同編集設定、監査時刻 |
+| `user_playlist_items` | `(playlist_id, video_id)` | `position`、追加者、追加時刻、`unique(playlist_id, position)` |
+| `quiz_search_embeddings` | `video_id` | 検索ベクトル、モデル、バージョン、source hash、生成時刻 |
+| `quiz_recommendation_embeddings` | `video_id` | 推薦itemベクトル、モデル、バージョン、source hash、生成時刻 |
+| `artist_search_embeddings` | `artist_id` | アーティスト検索用。導入時に作成 |
+| `playlist_search_embeddings` | `playlist_id` | 公開プレイリスト検索用。導入時に作成 |
+
+`users`のfavorite配列やhistory配列は`../spec/spec.md`では理解しやすい論理JSONとして残します。現段階の端末固有データはDriftが正本です。認証後にクラウド同期する場合は、`user_favorite_videos`、`user_favorite_comments`、`user_favorite_artists`、`user_quiz_history`のような子テーブルへ分け、1つの`users`行の巨大配列を毎回更新する構成にはしません。
 
 ## 4. `meta_data`を使うタイミング
 
@@ -273,10 +421,100 @@ PostgreSQLは大きな可変長値をTOASTで行外保存できます。また�
 
 最初の目標は、Homeカード10件を1通信、Game詳細1件を1通信で取得し、不要なコメント・歌詞・embeddingをHomeレスポンスへ含めないことです。データ件数が少ない間はSequential Scanの方が速い場合もあるため、索引が使われないことだけを失敗とは判断しません。
 
-## 12. 参考資料
+## 12. Google Sheetsを経由する承認・同期
+
+Google SheetsはSupabaseの正本ではなく、YouTube API・AI/Jev出力とSupabaseの間に置く人間向けのstagingです。raw JSONは取得事実の監査用、Sheetsは人の承認用、Supabaseはアプリが読む公開済みデータの正本とします。
+
+### 12.1. 全体フロー
+
+1. YouTube Data APIで動画情報とコメントを取得し、変更しないraw JSONを保存する。
+2. 決定的ルールで明確なノイズ・重複・答え漏れを除外する。
+3. OpenAIまたはJevを任意で使い、人が読む候補を8〜15件程度へ絞る。件数は目安であり、機械的な上限にしない。
+4. `comment_review`シートへ候補を1コメント1行で同期する。既存行は`video_id + comment_id`で更新し、人が入力した判定・順序・メモは上書きしない。
+5. 人が`approved`、`rejected`、`needs_revision`を選び、採用コメントへ`final_order`を付ける。通常は1〜8件程度だが、有効な場合はそれ以上を採用できる。
+6. 承認済み情報から、Supabaseの各物理テーブルと同じ列を持つシートを生成・更新する。
+7. Pythonがenum、外部キー、必須項目、重複、表示順、代表ヒント、MAD/非音楽ジャンル規則を検証する。
+8. `approved`かつ未反映・変更済みの行だけをSupabaseへtransaction/upsertする。AI出力から直接投入しない。
+9. 書き込み後にSupabaseから安定キーで読み戻し、値とhashが一致した時だけ`sync_status=synced`と`synced_at`を更新する。
+
+### 12.2. `comment_review`シート
+
+人の判定画面では、主に次を見せます。
+
+- コメント本文
+- YouTube上のいいね数
+- AI/Jevの推薦理由またはスコア
+- 人の判定
+- 最終表示順
+- 人のメモ
+- Supabase反映状態
+
+`video_id`と`comment_id`は同期の安定キーなので必要ですが、人が読む列から離して配置するか非表示グループにできます。投稿時期や取得時刻等も判定に不要なら非表示にし、最終的な`quiz_comments`シートには残します。
+
+推奨列は次のとおりです。
+
+| 列 | 編集主体 | 用途 |
+|---|---|---|
+| `video_id` | 自動 | 動画の安定キー |
+| `video_title` | 自動 | どの問題の候補かと答え漏れを確認する表示用情報 |
+| `comment_id` | 自動 | コメントの安定キー |
+| `source_content` | 自動 | rawから得た改変しない原文 |
+| `approved_content` | 人 | 表示用。修正しない場合は原文と同じ |
+| `commented_at` | 自動 | Supabase反映用。判定画面では非表示でもよい |
+| `comment_favorite_count` | 自動 | 判定の補助値 |
+| `comment_favorite_count_last_updated_at` | 自動 | 評価数の取得時点。判定画面では非表示でもよい |
+| `language` | 自動＋人 | 言語の偏り確認 |
+| `ai_selected` | 自動 | AI/Jevが候補にしたか |
+| `ai_score` | 自動 | 候補順位の補助 |
+| `ai_reason` | 自動 | 選択理由。事実とは扱わない |
+| `review_status` | 人 | `needs_review`/`approved`/`rejected`/`needs_revision` |
+| `final_order` | 人 | 採用コメントの表示順。1がサムネ候補 |
+| `reviewer_notes` | 人 | 修正理由・注意点 |
+| `sync_status` | 自動 | `not_ready`/`pending`/`synced`/`dirty`/`error` |
+| `synced_at` | 自動 | 最終反映時刻 |
+| `last_error` | 自動 | 同期失敗理由。秘密情報を含めない |
+
+原文を直接上書きせず`source_content`と`approved_content`を分けることで、人が句読点等を修正してもYouTube取得時の事実を追跡できます。
+
+### 12.3. Supabase物理テーブルを再現するシート
+
+次のシートは、原則としてSupabaseの同名テーブルと同じ「1行の単位」と列名を持たせます。
+
+| シート | 1行の単位 | 作成方法 |
+|---|---|---|
+| `quizzes` | 動画1件 | 動画情報と人が確定した分類から生成 |
+| `quiz_comments` | 採用コメント1件 | `comment_review`の`approved`行から生成 |
+| `quiz_lyrics` | 歌詞ヒント1件 | 人が原文・権利を確認して入力 |
+| `video_stats` | 動画1件の取得時点統計 | YouTube APIから生成。人の承認対象にはしない |
+| `artists` | アーティスト・制作者1件 | 既存IDとの同一性を人が確認 |
+| `artist_videos_junction` | artist-video関係1件 | 人が寄与者を確認 |
+| `artists_junction` | artist同士の無方向辺1件 | 人が関係を確認 |
+| `videos_junction` | video同士の無方向辺1件 | 人が`relation_type`を確認 |
+
+`video_atmosphere_color`、`content_genres`、`languages`、`meta_data`のようにSupabaseでJSONBまたは配列になるセルは、有効なJSON表現で保存します。例は`{"h":140,"s":0.85,"l":0.06}`、`["r_and_b_soul","pop"]`です。同期前にPythonが型へ変換し、失敗した行はSupabaseへ送信しません。
+
+各シート末尾に人・同期工程専用の列を置けますが、列名は`_review_status`、`_sync_status`、`_last_synced_hash`、`_synced_at`、`_last_error`のように`_`で始めます。同期コードは`_`列をSupabaseへ送らず、物理テーブルの列だけをupsertします。
+
+### 12.4. 差分同期
+
+- 行の安定キーは、`quizzes.video_id`、`quiz_comments(video_id, comment_id)`、各junctionの複合主キー等、Supabaseの主キーと一致させる。
+- Supabaseへ送る列だけを正規化してhash化し、`_last_synced_hash`と比較する。
+- 未反映なら`pending`、同期後に人が編集してhashが変われば`dirty`、検証・通信失敗なら`error`とする。
+- `synced`表示は書き込みリクエスト成功時ではなく、読み戻した値の一致確認後に付ける。
+- 行がシートから消えただけではSupabaseから削除しない。削除は明示的な操作列と再確認を必要とする。
+- 同一動画の`quizzes`、コメント、歌詞、アーティスト関係、動画関係は可能な範囲で1 transactionとして反映し、途中状態を公開しない。
+- 最後に`publication_status`を`published`へ切り替える。それまではFlutterの一般取得対象にしない。
+
+Googleサービスアカウント鍵はSheetsの読み書き専用で、Supabaseの認証には使いません。Supabase反映コマンドは別の制限されたDBロールまたは安全に保管したservice roleを使い、Flutter、Sheetsのセル、生成CSVへ資格情報を入れません。複数テーブルを1 transactionで反映する処理は、Flutterからではなく管理用RPCまたはローカル投入コマンドから実行します。
+
+この方式なら、最初の判定シートは文章といいね数を中心に簡潔に保ちつつ、別シートで実際のSupabase行を確認できます。コメントが8件を超えても`quiz_comments`シートとテーブルに行が増えるだけで、列は増えません。
+
+## 13. 参考資料
 
 - [Supabase: Query Optimization](https://supabase.com/docs/guides/database/query-optimization)
 - [Supabase: Debugging performance issues](https://supabase.com/docs/guides/database/debugging-performance)
 - [Supabase: Automatic embeddings](https://supabase.com/docs/guides/ai/automatic-embeddings)
+- [Supabase: Managing JSON and unstructured data](https://supabase.com/docs/guides/database/json)
+- [Supabase: Working With Arrays](https://supabase.com/docs/guides/database/arrays)
 - [pgvector公式: Indexing、Filtering、Hybrid Search](https://github.com/pgvector/pgvector)
 - [PostgreSQL: TOAST](https://www.postgresql.org/docs/current/storage-toast.html)

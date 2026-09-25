@@ -189,3 +189,14 @@
 - 初期のコンテンツベース推薦と将来の学習済みTwo-Towerを区別し、impressionを含む行動ログ要件を定義
 - ヒント、YouTube統計、検索派生値、索引、RLS、キャッシュ、性能計測の方針を整理
 - 実行方法に集中させるため`_YouTube_Data_API/README.md`は変更していない
+
+## 2026-09-25: Supabase物理スキーマとSheets承認工程
+
+- `spec/spec.md`のJSONをFlutter・人向けの結合済み論理表現とし、Supabaseの物理保存先を別途明文化
+- SupabaseはJSONBと配列を扱えることを確認し、タグは配列、補助情報はJSONB、可変件数のコメントは子テーブルとする基準を追加
+- `quizzes`、`quiz_comments`、`quiz_lyrics`、`video_stats`の物理列、主キー、外部キー、一意制約、CHECK制約をSQL例付きで定義
+- コメントは1件1行で本文・投稿時期・いいね数・表示順を保持し、1〜8件を目安としながらDB上限は設けない仕様へ変更
+- アーティスト、無方向関連、プレイリスト、目的別embedding、将来のユーザーデータ子テーブルとの対応を整理
+- Sheetsを人向け`comment_review`とSupabase同名の物理テーブル再現シートへ分離
+- 安定キー、承認状態、差分hash、`pending`/`dirty`/`synced`/`error`、読み戻し確認、明示的削除、公開前transactionを定義
+- `_YouTube_Data_API/README.md`から重複するシート設計を外し、実行手順とGoogle認証準備へ集中

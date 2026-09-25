@@ -94,7 +94,7 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
 
 `title`も非NULLです。音楽以外では動画タイトルの主要部分を使用します。`artists`には、その動画への実質的な寄与者を登録します。音楽動画では主なバンド・作曲者・名義等を優先し、単にアップロードしただけのチャンネルは登録しません。MADではMAD制作者、非音楽では十分に寄与した演者・制作者・チャンネルを登録できます。
 
-`thumbnail_hint_type`はHomeのサムネイルとGameの初期開放ヒントに使う非NULLのenum列で、`comment`または`lyric`を持ちます。`comment`なら`comments`の先頭要素、`lyric`なら`music_lyrics`の先頭要素を表示するため、本文を重複保存しません。`comments`は人が最終採用した1〜8件を表示順に保持します。選択された配列が空でないことと、コメントが8件を超えないことをデータ投入時に検証します。
+`thumbnail_hint_type`はHomeのサムネイルとGameの初期開放ヒントに使う非NULLのenum列で、`comment`または`lyric`を持ちます。`comment`なら`comments`の先頭要素、`lyric`なら`music_lyrics`の先頭要素を表示するため、本文を重複保存しません。`comments`は人が最終採用した1〜8件程度を目安として表示順に保持しますが、問題として有効なヒントが多い場合に8件を超えることを物理DBでは禁止しません。少なくとも1件あること、表示順が重複しないこと、先頭要素が代表ヒントとして有効であることをデータ投入時に検証します。
 
 `meta_data`は将来のembedding生成、文字検索、作品をまたぐ関連候補の発見に使う補助情報です。`keywords`と`related_works`等を持つjsonbとし、クイズの正解判定や画面への直接表示には使用しません。現在の検索ではJSON内の文字列を平坦化して部分一致の対象にします。コメントや歌詞だけでは表れにくいアニメ、映画、アルバム、シリーズ、文化的文脈等を保存できます。
 
@@ -118,6 +118,9 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
 ```
 
 #### ② `quizzes` テーブル (出題情報の管理)
+
+次のJSONはFlutterとデータ作成工程で扱う**結合済みの論理表現**です。各項目は失いませんが、Supabaseの物理DBでは更新頻度と件数に応じて`quizzes`、`quiz_comments`、`quiz_lyrics`、`video_stats`、embedding用テーブル等へ正規化します。実際の列・外部キー・Sheetsとの対応は`../_YouTube_Data_API/spec.md`を正本とします。
+
 ```jsonc
 {
    "video_id": "y2bVIBwpCTA",                          // text型 (Primary Key / YouTube動画ID / API最新値取得キーも兼ねる)
@@ -127,21 +130,21 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
    "title": "I Want You Back",                         // text型 (非NULL)
    "languages": ["english"],                           // language[]型 (非NULL / 条件絞り込み用・出題用)
    "posted_at": "2020-06-14T19:00:08Z",                // timestamptz型 (非NULL / 条件絞り込み・新着順用。YouTubeの公開日時を失わない)
-   "video_favorite_count": 450000,                      // bigint型 (YouTube APIによる直近の動画高評価数キャッシュ)
-   "video_view_count": 130000000,                       // bigint型 (YouTube APIによる直近の再生数キャッシュ)
-   "video_favorite_count_last_updated_at": "2026-09-14", // date型
-   "video_view_count_last_updated_at": "2026-09-14",     // date型
+   "video_favorite_count": 450000,                      // 論理項目。物理DBではvideo_stats.like_count
+   "video_view_count": 130000000,                       // 論理項目。物理DBではvideo_stats.view_count
+   "video_favorite_count_last_updated_at": "2026-09-14", // 論理項目。物理DBではvideo_stats.fetched_at
+   "video_view_count_last_updated_at": "2026-09-14",     // 論理項目。物理DBではvideo_stats.fetched_at
    "music_released_at": {                               // 論理表現。物理DBではdate列とprecision列に分ける。非音楽等ではnull
       "precision": "day",                              // date_precision型: year / month / day
       "date": "1969-10-07"                             // date型
    },
    "thumbnail_hint_type": "comment",                   // thumbnail_hint_type型: (非NULL / comment / lyric)、対応配列の先頭要素を使う
-   "music_lyrics": [                                   // text[]型 (最大3個の歌詞 / 非音楽ではnull)
+   "music_lyrics": [                                   // 論理配列。物理DBではquiz_lyricsの表示順付き行
       "Oh, baby, give me one more chance",
       "Won't you please let me (Back in your heart)",
       "But now since I see you in his arms (I want you back)"
    ],
-   "comments": [                                       // jsonb型 (1〜8件の固定コメントヒント。本文・ID・投稿時期・評価数キャッシュを表示順に保持)
+   "comments": [                                       // 論理配列。物理DBではquiz_commentsの1コメント1行。1〜8件程度を目安とし上限は固定しない
       {
          "comment_id": "UgzYLJd1ADkFg4QPuOh4AaABAg",
          "commented_at": "2020-07-14T10:00:08Z",
@@ -161,7 +164,7 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
       "keywords": ["Motown", "Jackson family", "live performance"],
       "related_works": []
    },
-   "embedding": null                                   // vector(384)型 (将来のレコメンド機能用。当面NULL)
+   "embedding": null                                   // 論理項目。物理DBでは目的別embeddingテーブルへ分離
 }
 
 ```
@@ -175,7 +178,7 @@ YouTube側で変動する動画の再生回数・高評価数、コメントの�
    "artist_id": "d5b25b8a-9a36-4f13-92f2-6dca44c66b51", // uuid型 (Primary Key)
    "name": "The Jackson 5",                              // text型 (非NULL / UIに表示する現在の代表名)
    "sub_names": ["Jackson 5", "ジャクソン5"],            // text[]型 (非NULL、既定値[] / 検索専用でUIには表示しない)
-   "embedding": null                                      // vector(384)型 (将来の検索・関連候補用。当面NULL)
+   "embedding": null                                      // 論理項目。物理DBではartist_search_embeddingsへ分離
 }
 ```
 
@@ -248,7 +251,7 @@ MADや複数楽曲演奏を追加するときは、元楽曲ごとに最も代�
    "allows_collaboration": false,
    "created_at": "2026-09-18T10:00:00Z",              // timestamptz型
    "updated_at": "2026-09-20T12:00:00Z",              // timestamptz型
-   "embedding": null                                    // vector(384)型 (将来の検索・関連候補用)
+   "embedding": null                                    // 論理項目。物理DBではplaylist_search_embeddingsへ分離
 }
 
 // user_playlist_items
@@ -379,9 +382,9 @@ Riverpodに置くのは複数画面・共通ナビゲーションから参照す
 
 1. YouTube Data APIの`videos.list`と`commentThreads.list`から動画情報・統計・最大200件程度のトップレベルコメントを取得し、取得時刻付きのraw JSONへ保存する。
 2. URL、繰り返し、短すぎる文、重複、タイトルやアーティストの直接的な答え漏れを決定的なルールで除外し、最大40件程度の意味評価候補にする。高評価数だけで選ばず、言語も記録する。OpenAIを使わない場合は`review-rules`で候補ごとの判定、検出言語、答え漏れ、ノイズ、スコア、人の承認欄をJSON/CSVへ出す。決定的ルールは事前選別であり、別言語の人物名や文脈上の答え漏れを完全に決めないため、最終承認を人または次段の型付き提案へ渡す。
-3. OpenAIまたはJevで意味評価する場合は、人が確認するコメント候補を最大15件程度へ絞る。OpenAI APIのStructured OutputsはPydanticで固定した型へコメント評価、表示タイトル、ジャンル、言語、アーティスト候補、検索キーワードを出力できる。ChatGPT Plus契約はAPIキーやAPI利用枠を含まないため、利用時は開発者用のAPIキーを別途`.env`へ設定する。
+3. OpenAIまたはJevで意味評価する場合は、人が確認するコメント候補を15件程度の目安まで絞る。OpenAI APIのStructured OutputsはPydanticで固定した型へコメント評価、表示タイトル、ジャンル、言語、アーティスト候補、検索キーワードを出力できる。ChatGPT Plus契約はAPIキーやAPI利用枠を含まないため、利用時は開発者用のAPIキーを別途`.env`へ設定する。
 4. Jevは任意の実験的な`CommentRanker`とし、作品固有性・有用性・答え漏れ・ノイズの型付き採点だけを担当させる。自由文のタイトル、アーティスト、関連動画などの事実生成やDB確定には使わない。early access中は外部送信を実装せず、同じ基準の入力JSONを生成して比較可能にする。
-5. AI提案を`needs_review`状態のJSONと、1コメント1行のUTF-8 CSVへ出力する。Google Sheetsには最大15件程度の候補を同期し、人がコメント言語、答え漏れ、有用性、事実、既存アーティストとの同一性、既存動画・関連動画を確認して、表示順を含む1〜8件を最終採用する。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
+5. AI提案を`needs_review`状態のJSONと、1コメント1行のUTF-8 CSVへ出力する。Google Sheetsには15件程度を目安とした候補を同期し、人がコメント言語、答え漏れ、有用性、事実、既存アーティストとの同一性、既存動画・関連動画を確認して、表示順を含む1〜8件程度を最終採用する。有効なヒントが多い場合は8件を超えてもよく、DB上限にはしない。歌詞はAIに生成させず、権利と原文を確認して別工程で入力する。
 6. Google Sheets自動同期はローカルPythonツールからGoogle Sheets APIを使用する。対象シートだけをIAMロールなしのサービスアカウントへ編集者として直接共有し、JSON鍵`credentials.json`をGit対象外にする。既知のSpreadsheet IDへ値を書くだけなのでGoogle Drive APIやドメイン全体の委任へ権限を広げない。再同期時は安定IDで行を更新し、人が入力した採否・メモ・最終順序を上書きしない。
 7. 人が`approved`にしたデータだけをSupabase投入候補とする。`artist_id`候補は既存Artistと照合し、`videos_junction`の関係は必ず人が確定する。投入処理はフェーズ7で、承認済みデータだけを受け付ける別コマンドとして実装する。
 
